@@ -1,0 +1,16 @@
+﻿  CollisionDetection.cpp
+  Debug.cpp
+  GameObject.cpp
+  GameServer.cpp
+  GameWorld.cpp
+  NavigationGrid.cpp
+  NetworkObject.cpp
+  NetworkState.cpp
+  PhysicsObject.cpp
+  PhysicsSystem.cpp
+  PositionConstraint.cpp
+  PushdownMachine.cpp
+  PushdownState.cpp
+  Transform.cpp
+  Generating Code...
+  CSC8503Common.vcxproj -> C:\scratch\CSC8503 2019 Download\Win32\Debug\CSC8503Common.lib
