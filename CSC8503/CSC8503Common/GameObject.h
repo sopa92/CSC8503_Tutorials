@@ -11,6 +11,9 @@
 using std::vector;
 
 namespace NCL {
+	enum class LayerType {
+		PLAYER, OBJECT, CAMERA, FLOOR, CUBE, SPHERE
+	};
 	namespace CSC8503 {
 		class NetworkObject;
 
@@ -74,7 +77,9 @@ namespace NCL {
 			bool GetBroadphaseAABB(Vector3&outsize) const;
 
 			void UpdateBroadphaseAABB();
-
+			LayerType GetLayer() { return layer; }
+			void SetLayer(LayerType type) { layer = type; }
+			
 		protected:
 			Transform			transform;
 
@@ -82,7 +87,7 @@ namespace NCL {
 			PhysicsObject*		physicsObject;
 			RenderObject*		renderObject;
 			NetworkObject*		networkObject;
-
+			LayerType	layer;
 			bool	isActive;
 			string	name;
 

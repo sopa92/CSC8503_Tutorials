@@ -72,7 +72,8 @@ void TutorialGame::UpdateGame(float dt) {
 	if (lockedObject != nullptr) {
 		LockedCameraMovement();
 	}
-
+	//physics->SetGravity(Vector3(0.0f, -9.8f, 0.0f));
+	//physics->SetGlobalDamping(0.1f);
 	UpdateKeys();
 
 	if (useGravity) {
@@ -82,6 +83,7 @@ void TutorialGame::UpdateGame(float dt) {
 		Debug::Print("(G)ravity off", Vector2(10, 40));
 	}
 
+	
 	SelectObject();
 	MoveSelectedObject();
 
@@ -241,13 +243,35 @@ bool TutorialGame::SelectObject() {
 	}
 	if (inSelectionMode) {
 		renderer->DrawString("Press Q to change to camera mode!", Vector2(10, 0));
+		if (selectionObject)
+		{
+			if (seenObject)
+			{
+				seenObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
+				seenObject = nullptr;
+			}
+			// getting object IN-FRONT of selected object
+			Ray objectForwardRay = Ray(selectionObject->GetConstTransform().GetWorldPosition(), selectionObject->GetConstTransform().GetWorldOrientation() * Vector3(0,0,-1));
+			RayCollision closestObjectCollision;
+			if (world->Raycast(objectForwardRay, closestObjectCollision, true))
+			{
+				seenObject = (GameObject*)closestObjectCollision.node;
+				seenObject->GetRenderObject()->SetColour(Vector4(0, 0, 1, 1));  
+				renderer->DrawLine(selectionObject->GetTransform().GetWorldPosition(), seenObject->GetTransform().GetWorldPosition(), seenObject->GetRenderObject()->GetColour());
+			}
 
+		}
 		if (Window::GetMouse()->ButtonDown(NCL::MouseButtons::LEFT)) {
 			if (selectionObject) {	//set colour to deselected;
 				selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
 				selectionObject = nullptr;
+				if (seenObject)
+				{
+					seenObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
+					seenObject = nullptr;
+				}
 			}
-
+			
 			Ray ray = CollisionDetection::BuildRayFromMouse(*world->GetMainCamera());
 
 			RayCollision closestCollision;
@@ -285,7 +309,21 @@ line - after the third, they'll be able to twist under torque aswell.
 */
 
 void TutorialGame::MoveSelectedObject() {
-
+	renderer->DrawString(" Click Force :" + std::to_string(forceMagnitude), Vector2(10, 20)); // Draw debug text at 10 ,20
+	forceMagnitude += Window::GetMouse()->GetWheelMovement() * 100.0f;
+	if (!selectionObject) {
+		return;// we haven 't selected anything !
+	}
+	// Push the selected object !
+	if (Window::GetMouse()->ButtonPressed(NCL::MouseButtons::RIGHT)) {
+		Ray ray = CollisionDetection::BuildRayFromMouse(*world->GetMainCamera());
+		RayCollision closestCollision;
+		if (world->Raycast(ray, closestCollision, true)) {
+			if (closestCollision.node == selectionObject) {
+				selectionObject->GetPhysicsObject()->AddForceAtPosition(ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
+			}
+		}
+	}
 }
 
 void TutorialGame::InitCamera() {
@@ -320,6 +358,7 @@ A single function to add a large immoveable cube to the bottom of our world
 */
 GameObject* TutorialGame::AddFloorToWorld(const Vector3& position) {
 	GameObject* floor = new GameObject();
+	floor->SetLayer(LayerType::FLOOR);
 
 	Vector3 floorSize = Vector3(100, 2, 100);
 	AABBVolume* volume = new AABBVolume(floorSize);
@@ -345,8 +384,9 @@ rigid body representation. This and the cube function will let you build a lot o
 physics worlds. You'll probably need another function for the creation of OBB cubes too.
 
 */
-GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, float inverseMass) {
+GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float inverseMass) {
 	GameObject* sphere = new GameObject();
+	sphere->SetLayer(LayerType::SPHERE);
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
 	SphereVolume* volume = new SphereVolume(radius);
@@ -358,7 +398,17 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 	sphere->SetPhysicsObject(new PhysicsObject(&sphere->GetTransform(), sphere->GetBoundingVolume()));
 
 	sphere->GetPhysicsObject()->SetInverseMass(inverseMass);
-	sphere->GetPhysicsObject()->InitSphereInertia();
+
+	if (isHollow)
+	{
+		sphere->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
+		sphere->GetPhysicsObject()->InitSphereInertia(true);
+	}
+	else
+	{
+		sphere->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
+		sphere->GetPhysicsObject()->InitSphereInertia(false);
+	}
 
 	world->AddGameObject(sphere);
 
@@ -367,7 +417,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass) {
 	GameObject* cube = new GameObject();
-
+	cube->SetLayer(LayerType::CUBE);
 	AABBVolume* volume = new AABBVolume(dimensions);
 
 	cube->SetBoundingVolume((CollisionVolume*)volume);
@@ -392,7 +442,7 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 	float inverseMass	= 1.0f;
 
 	GameObject* goose = new GameObject();
-
+	goose->SetLayer(LayerType::PLAYER);
 
 	SphereVolume* volume = new SphereVolume(size);
 	goose->SetBoundingVolume((CollisionVolume*)volume);
@@ -404,7 +454,7 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 	goose->SetPhysicsObject(new PhysicsObject(&goose->GetTransform(), goose->GetBoundingVolume()));
 
 	goose->GetPhysicsObject()->SetInverseMass(inverseMass);
-	goose->GetPhysicsObject()->InitSphereInertia();
+	goose->GetPhysicsObject()->InitSphereInertia(false);
 
 	world->AddGameObject(goose);
 
@@ -417,8 +467,9 @@ GameObject* TutorialGame::AddParkKeeperToWorld(const Vector3& position)
 	float inverseMass = 0.5f;
 
 	GameObject* keeper = new GameObject();
+	keeper->SetLayer(LayerType::PLAYER);
 
-	AABBVolume* volume = new AABBVolume(Vector3(0.3, 0.9f, 0.3) * meshSize);
+	AABBVolume* volume = new AABBVolume(Vector3(0.3f, 0.9f, 0.3f) * meshSize);
 	keeper->SetBoundingVolume((CollisionVolume*)volume);
 
 	keeper->GetTransform().SetWorldScale(Vector3(meshSize, meshSize, meshSize));
@@ -450,11 +501,11 @@ GameObject* TutorialGame::AddCharacterToWorld(const Vector3& position) {
 	}
 
 	GameObject* character = new GameObject();
-
+	character->SetLayer(LayerType::PLAYER);
 	float r = rand() / (float)RAND_MAX;
 
 
-	AABBVolume* volume = new AABBVolume(Vector3(0.3, 0.9f, 0.3) * meshSize);
+	AABBVolume* volume = new AABBVolume(Vector3(0.3f, 0.9f, 0.3f) * meshSize);
 	character->SetBoundingVolume((CollisionVolume*)volume);
 
 	character->GetTransform().SetWorldScale(Vector3(meshSize, meshSize, meshSize));
@@ -473,6 +524,7 @@ GameObject* TutorialGame::AddCharacterToWorld(const Vector3& position) {
 
 GameObject* TutorialGame::AddAppleToWorld(const Vector3& position) {
 	GameObject* apple = new GameObject();
+	apple->SetLayer(LayerType::OBJECT);
 
 	SphereVolume* volume = new SphereVolume(0.7f);
 	apple->SetBoundingVolume((CollisionVolume*)volume);
@@ -483,7 +535,7 @@ GameObject* TutorialGame::AddAppleToWorld(const Vector3& position) {
 	apple->SetPhysicsObject(new PhysicsObject(&apple->GetTransform(), apple->GetBoundingVolume()));
 
 	apple->GetPhysicsObject()->SetInverseMass(1.0f);
-	apple->GetPhysicsObject()->InitSphereInertia();
+	apple->GetPhysicsObject()->InitSphereInertia(false);
 
 	world->AddGameObject(apple);
 
@@ -512,7 +564,7 @@ void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing
 				AddCubeToWorld(position, cubeDims);
 			}
 			else {
-				AddSphereToWorld(position, sphereRadius);
+				AddSphereToWorld(position, sphereRadius, false);
 			}
 		}
 	}
