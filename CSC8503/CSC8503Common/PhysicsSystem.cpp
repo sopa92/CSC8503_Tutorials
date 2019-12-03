@@ -1,4 +1,4 @@
-#include "PhysicsSystem.h"
+﻿#include "PhysicsSystem.h"
 #include "PhysicsObject.h"
 #include "GameObject.h"
 #include "CollisionDetection.h"
@@ -129,7 +129,7 @@ void PhysicsSystem::UpdateCollisionList() {
 		}
 		(*i).framesLeft = (*i).framesLeft - 1;
 		if ((*i).framesLeft < 0) {
-			i->a->OnCollisionEnd(i->b);
+			i->a->OnCollisionEnd(i->b);	// when an object has stopped colliding with something
 			i->b->OnCollisionEnd(i->a);
 			i = allCollisions.erase(i);
 		}
@@ -149,17 +149,34 @@ void PhysicsSystem::UpdateObjectAABBs() {
 	}
 }
 
-/*
-
-This is how we'll be doing collision detection in tutorial 4.
-We step thorugh every pair of objects once (the inner for loop offset 
-ensures this), and determine whether they collide, and if so, add them
-to the collision set for later processing. The set will guarantee that
-a particular pair will only be added once, so objects colliding for
-multiple frames won't flood the set with duplicates.
-*/
+/* This is how we'll be doing collision detection in tutorial 4. We step thorugh every pair of objects once (the inner for loop offset 
+ensures this), and determine whether they collide, and if so, add them to the collision set for later processing. The set will guarantee that
+a particular pair will only be added once, so objects colliding for multiple frames won't flood the set with duplicates. */
 void PhysicsSystem::BasicCollisionDetection() {
+	std::vector<GameObject*>::const_iterator first;
+	std::vector<GameObject*>::const_iterator last;
+	gameWorld.GetObjectIterators(first, last);
 
+	for (auto i = first; i != last; ++i) {
+		if ((*i)->GetPhysicsObject() == nullptr) {
+			continue;
+		}
+		// we are starting the inner for loop at one element past the outer for loop, so that we don't resolve identical collisions multiple times in a frame
+		for (auto j = i + 1; j != last; ++j) {
+			if ((*j)->GetPhysicsObject() == nullptr) {
+				continue;
+			}
+			CollisionDetection::CollisionInfo info;
+
+			if (CollisionDetection::ObjectIntersection(*i, *j, info)) {	// will return true if a collision has taken place
+				if (!((*i)->GetName() == "character" || (*i)->GetName() == "keeper" || (*i)->GetName() == "goose" || (*i)->GetName() == "floor")) {
+					std::cout << " Collision between " << (*i)->GetName() << " and " << (*j)->GetName() << std::endl;
+				}
+				info.framesLeft = numCollisionFrames;
+				allCollisions.insert(info);	// we insert the successfully detected collision into an STL::List,	which will let us keep track of objects that are colliding
+			}
+		}
+	}
 }
 
 /*

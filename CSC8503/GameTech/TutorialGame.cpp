@@ -203,9 +203,9 @@ void TutorialGame::DebugObjectMovement() {
 			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, -10, 0));
 		}
 
-		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
-		}
+		//if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
+		//	selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
+		//}
 
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP)) {
 			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -10));
@@ -357,7 +357,7 @@ A single function to add a large immoveable cube to the bottom of our world
 
 */
 GameObject* TutorialGame::AddFloorToWorld(const Vector3& position) {
-	GameObject* floor = new GameObject();
+	GameObject* floor = new GameObject("floor");
 	floor->SetLayer(LayerType::FLOOR);
 
 	Vector3 floorSize = Vector3(100, 2, 100);
@@ -385,7 +385,7 @@ physics worlds. You'll probably need another function for the creation of OBB cu
 
 */
 GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float inverseMass) {
-	GameObject* sphere = new GameObject();
+	GameObject* sphere = new GameObject("sphere");
 	sphere->SetLayer(LayerType::SPHERE);
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
@@ -416,7 +416,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 }
 
 GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass) {
-	GameObject* cube = new GameObject();
+	GameObject* cube = new GameObject("cube");
 	cube->SetLayer(LayerType::CUBE);
 	AABBVolume* volume = new AABBVolume(dimensions);
 
@@ -441,7 +441,7 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 	float size			= 1.0f;
 	float inverseMass	= 1.0f;
 
-	GameObject* goose = new GameObject();
+	GameObject* goose = new GameObject("goose");
 	goose->SetLayer(LayerType::PLAYER);
 
 	SphereVolume* volume = new SphereVolume(size);
@@ -455,7 +455,7 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 
 	goose->GetPhysicsObject()->SetInverseMass(inverseMass);
 	goose->GetPhysicsObject()->InitSphereInertia(false);
-
+	
 	world->AddGameObject(goose);
 
 	return goose;
@@ -466,7 +466,7 @@ GameObject* TutorialGame::AddParkKeeperToWorld(const Vector3& position)
 	float meshSize = 4.0f;
 	float inverseMass = 0.5f;
 
-	GameObject* keeper = new GameObject();
+	GameObject* keeper = new GameObject("keeper");
 	keeper->SetLayer(LayerType::PLAYER);
 
 	AABBVolume* volume = new AABBVolume(Vector3(0.3f, 0.9f, 0.3f) * meshSize);
@@ -500,7 +500,7 @@ GameObject* TutorialGame::AddCharacterToWorld(const Vector3& position) {
 		minVal.y = min(minVal.y, i.y);
 	}
 
-	GameObject* character = new GameObject();
+	GameObject* character = new GameObject("character");
 	character->SetLayer(LayerType::PLAYER);
 	float r = rand() / (float)RAND_MAX;
 
@@ -523,7 +523,7 @@ GameObject* TutorialGame::AddCharacterToWorld(const Vector3& position) {
 }
 
 GameObject* TutorialGame::AddAppleToWorld(const Vector3& position) {
-	GameObject* apple = new GameObject();
+	GameObject* apple = new GameObject("apple");
 	apple->SetLayer(LayerType::OBJECT);
 
 	SphereVolume* volume = new SphereVolume(0.7f);

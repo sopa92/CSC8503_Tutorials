@@ -1,2 +1,4 @@
 *.tlog
 /.vs/
+/CSC8503/CSC8503Common/Debug/
+/CSC8503/GameTech/Debug/

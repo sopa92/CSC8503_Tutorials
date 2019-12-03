@@ -24,9 +24,6 @@
     <ClInclude Include="CollisionDetection.h">
       <Filter>CollisionDetection</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicsObject.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
     <ClInclude Include="Ray.h">
       <Filter>CollisionDetection</Filter>
     </ClInclude>
@@ -53,15 +50,6 @@
     </ClInclude>
     <ClInclude Include="GameClient.h">
       <Filter>Networking</Filter>
-    </ClInclude>
-    <ClInclude Include="Constraint.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="PositionConstraint.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="PhysicsSystem.h">
-      <Filter>Physics</Filter>
     </ClInclude>
     <ClInclude Include="SphereVolume.h">
       <Filter>CollisionDetection</Filter>
@@ -122,6 +110,21 @@
     </ClInclude>
     <ClInclude Include="Debug.h">
       <Filter>Other</Filter>
+    </ClInclude>
+    <ClInclude Include="CapsuleVolume.h">
+      <Filter>CollisionDetection</Filter>
+    </ClInclude>
+    <ClInclude Include="Constraint.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsObject.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsSystem.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="PositionConstraint.h">
+      <Filter>Physics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -199,6 +202,9 @@
     </ClCompile>
     <ClCompile Include="Transform.cpp">
       <Filter>Other</Filter>
+    </ClCompile>
+    <ClCompile Include="CapsuleVolume.cpp">
+      <Filter>CollisionDetection</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
