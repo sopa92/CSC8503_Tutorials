@@ -180,13 +180,38 @@ void PhysicsSystem::BasicCollisionDetection() {
 }
 
 /*
-
 In tutorial 5, we start determining the correct response to a collision,
 so that objects separate back out. 
-
 */
 void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, CollisionDetection::ContactPoint& p) const {
+	PhysicsObject* physA = a.GetPhysicsObject();
+	PhysicsObject* physB = b.GetPhysicsObject();
 
+	Transform& transformA = a.GetTransform();
+	Transform& transformB = b.GetTransform();
+
+	float totalMass = physA->GetInverseMass() + physB->GetInverseMass();	// determine the total inverse mass of the two objects (use this to calculate impulse J, and simple object projection)
+	// Separate them out using projection
+	/* we push each object along the collision normal, by an amount proportional to the penetration distance, and the object’s inverse mass. 
+	By dividing each object’s mass by the totalMass variable, we make it such that between the two calculations, the object’s move by a total 
+	amount of p.penetration away from each other, but a ’heavier’ object will move by less, as it makes up less of the "total mass" */
+	transformA.SetWorldPosition(transformA.GetWorldPosition() - (p.normal * p.penetration * (physA->GetInverseMass() / totalMass)));
+	transformB.SetWorldPosition(transformB.GetWorldPosition() + (p.normal * p.penetration * (physB->GetInverseMass() / totalMass)));
+
+	// collision points relative to each object’s position
+	Vector3 relativeA = p.localA;
+	Vector3 relativeB = p.localB;
+
+	// we determine how much the object is moving via the cross product, much in the same way as we determine the amount of torque using the cross product when applying angular forces
+	Vector3 angVelocityA = Vector3::Cross(physA->GetAngularVelocity(), relativeA);
+	Vector3 angVelocityB = Vector3::Cross(physB->GetAngularVelocity(), relativeB);
+
+	// we determine the velocities at which the two objects are colliding, via simple addition
+	Vector3 fullVelocityA = physA->GetLinearVelocity() + angVelocityA;
+	Vector3 fullVelocityB = physB->GetLinearVelocity() + angVelocityB;
+
+	// we determine the relative velocity of the collision
+	Vector3 contactVelocity = fullVelocityB - fullVelocityA;
 }
 
 /*

@@ -100,7 +100,7 @@ bool CollisionDetection::RaySphereIntersection(const Ray&r, const Transform& wor
 	// Get the direction between the ray origin and the sphere origin
 	Vector3 dir = spherePos - r.GetPosition();
 
-	// Then project the sphere 's origin onto our ray direction vector
+	// Then project the sphere's origin onto our ray direction vector
 	float sphereProj = Vector3::Dot(dir, r.GetDirection());
 	if (sphereProj < 0.0f) {
 		return false; // point is behind the ray !
@@ -166,7 +166,7 @@ bool CollisionDetection::AABBTest(const Vector3& posA, const Vector3& posB, cons
 	/* We're looking to see if the distance between the object's on each axis is less than the sum of the box sizes on that axis, 
 	and only if that is true for all axes should we consider the objects intersecting. We need to use the abs function to get the 
 	absolute value of the relative position, as the box A might be to the left of box B, or to the right - it doesn't matter, all 
-	we care about is whether the dierence is position is greater than the box dimensions. */
+	we care about is whether the difference is position is greater than the box dimensions. */
 	if (abs(delta.x) < totalSize.x && abs(delta.y) < totalSize.y && abs(delta.z) < totalSize.z) {
 		return true;
 	}
