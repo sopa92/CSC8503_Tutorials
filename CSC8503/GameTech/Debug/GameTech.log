@@ -1,4 +1,0 @@
-﻿  TutorialGame.cpp
-C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\um\winsock2.h(17,1): warning C4005: '_WINSOCKAPI_': macro redefinition
-C:\Users\SoPa9\source\repos\CSC8503_Tutorials\CSC8503\GameTech\TutorialGame.cpp : message : see previous definition of '_WINSOCKAPI_'
-  GameTech.vcxproj -> C:\Users\SoPa9\source\repos\CSC8503_Tutorials\Win32\Debug\GameTech.exe
