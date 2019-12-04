@@ -122,6 +122,7 @@ OnCollisionBegin / OnCollisionEnd functions (removing health when hit by a
 rocket launcher, gaining a point when the player hits the gold coin, and so on).
 */
 void PhysicsSystem::UpdateCollisionList() {
+
 	for (std::set<CollisionDetection::CollisionInfo>::iterator i = allCollisions.begin(); i != allCollisions.end(); ) {
 		if ((*i).framesLeft == numCollisionFrames) {
 			i->a->OnCollisionBegin(i->b);
@@ -169,9 +170,12 @@ void PhysicsSystem::BasicCollisionDetection() {
 			CollisionDetection::CollisionInfo info;
 
 			if (CollisionDetection::ObjectIntersection(*i, *j, info)) {	// will return true if a collision has taken place
-				if (!((*i)->GetName() == "character" || (*i)->GetName() == "keeper" || (*i)->GetName() == "goose" || (*i)->GetName() == "floor")) {
+				/*if (!((*i)->GetName() == "character" || (*i)->GetName() == "keeper" || (*i)->GetName() == "goose" || (*i)->GetName() == "floor")) {
 					std::cout << " Collision between " << (*i)->GetName() << " and " << (*j)->GetName() << std::endl;
-				}
+				}*/
+
+				//will add the impulses to instantaneously change our linear and angular velocity such that the objects will move apart
+				ImpulseResolveCollision(*info.a, *info.b, info.point); 
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);	// we insert the successfully detected collision into an STL::List,	which will let us keep track of objects that are colliding
 			}
@@ -191,9 +195,12 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 	Transform& transformB = b.GetTransform();
 
 	float totalMass = physA->GetInverseMass() + physB->GetInverseMass();	// determine the total inverse mass of the two objects (use this to calculate impulse J, and simple object projection)
-	// Separate them out using projection
-	/* we push each object along the collision normal, by an amount proportional to the penetration distance, and the object’s inverse mass. 
-	By dividing each object’s mass by the totalMass variable, we make it such that between the two calculations, the object’s move by a total 
+	if (totalMass == 0.0f) {
+		return;
+	}
+																			// Separate them out using projection
+	/* we push each object along the collision normal, by an amount proportional to the penetration distance, and the object’s inverse mass.
+	By dividing each object’s mass by the totalMass variable, we make it such that between the two calculations, the object’s move by a total
 	amount of p.penetration away from each other, but a ’heavier’ object will move by less, as it makes up less of the "total mass" */
 	transformA.SetWorldPosition(transformA.GetWorldPosition() - (p.normal * p.penetration * (physA->GetInverseMass() / totalMass)));
 	transformB.SetWorldPosition(transformB.GetWorldPosition() + (p.normal * p.penetration * (physB->GetInverseMass() / totalMass)));
@@ -212,6 +219,30 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
 	// we determine the relative velocity of the collision
 	Vector3 contactVelocity = fullVelocityB - fullVelocityA;
+
+
+	float impulseForce = Vector3::Dot(contactVelocity, p.normal);
+	if (impulseForce > 0) {
+		return;
+	}
+
+	// now to work out the effect of inertia ....
+	Vector3 inertiaA = Vector3::Cross(physA->GetInertiaTensor() * Vector3::Cross(relativeA, p.normal), relativeA);
+	Vector3 inertiaB = Vector3::Cross(physB->GetInertiaTensor() * Vector3::Cross(relativeB, p.normal), relativeB);
+	float angularEffect = Vector3::Dot(inertiaA + inertiaB, p.normal);
+
+	float cRestitution = 0.66f; // disperse some kinectic energy
+
+	float j = (-(1.0f + cRestitution) * impulseForce) / (totalMass + angularEffect);
+
+	Vector3 fullImpulse = p.normal * j;
+
+	// apply the linear and angular impulses, in opposite directions
+	physA->ApplyLinearImpulse(-fullImpulse);
+	physB->ApplyLinearImpulse(fullImpulse);
+	
+	physA->ApplyAngularImpulse(Vector3::Cross(relativeA, -fullImpulse));
+	physB->ApplyAngularImpulse(Vector3::Cross(relativeB, fullImpulse));
 }
 
 /*
@@ -303,6 +334,7 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
 		Vector3 linearVel = object->GetLinearVelocity();
 		position += linearVel * dt;
 		transform.SetLocalPosition(position);
+		transform.SetWorldPosition(position);	
 		// Linear Damping
 		linearVel = linearVel * frameDamping;
 		object->SetLinearVelocity(linearVel);

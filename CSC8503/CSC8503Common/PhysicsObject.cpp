@@ -17,14 +17,14 @@ PhysicsObject::~PhysicsObject()	{
 
 }
 
-void PhysicsObject::ApplyAngularImpulse(const Vector3& force) {
-	if (force.Length() > 0) {
+void PhysicsObject::ApplyAngularImpulse(const Vector3& force) {	//scales its input by the appropriate inverse mass representation, and adds it to the appropriate velocity vector.
+	/*if (force.Length() > 0) {
 		bool a = true;
-	}
+	}*/
 	angularVelocity += inverseInteriaTensor * force;
 }
 
-void PhysicsObject::ApplyLinearImpulse(const Vector3& force) {
+void PhysicsObject::ApplyLinearImpulse(const Vector3& force) {	//scales its input by the appropriate inverse mass representation, and adds it to the appropriate velocity vector.
 	linearVelocity += force * inverseMass;
 }
 
