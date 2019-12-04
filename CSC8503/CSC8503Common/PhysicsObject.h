@@ -45,6 +45,7 @@ namespace NCL {
 			void AddForce(const Vector3& force);
 
 			void AddForceAtPosition(const Vector3& force, const Vector3& position);
+			void AddForceAroundPosition(const Vector3& force, const Vector3& position);
 
 			void AddTorque(const Vector3& torque);
 
@@ -60,21 +61,20 @@ namespace NCL {
 			}
 
 			void InitCubeInertia();
+			void InitWaterInertia();
 			void InitSphereInertia(bool isHollow);
 
 			void UpdateInertiaTensor();
 
 			Matrix3 GetInertiaTensor() const {
-				return inverseInteriaTensor;
+				return inverseInertiaTensor;
 			}
 
-			float GetElasticity() const {
-				return elasticity;
-			}
+			float GetElasticity() const { return elasticity; }
+			void SetElasticity(float el) { elasticity=el; }
 
-			void SetElasticity(float el) {
-				elasticity=el;
-			}
+			float GetStiffness() const { return stiffness; }
+			void SetStiffness(float stiff) { stiffness = stiff; }
 
 		protected:
 			const CollisionVolume* volume;
@@ -83,6 +83,7 @@ namespace NCL {
 			float inverseMass;
 			float elasticity;
 			float friction;
+			float stiffness;
 
 			//linear stuff
 			Vector3 linearVelocity;
@@ -93,7 +94,7 @@ namespace NCL {
 			Vector3 angularVelocity;
 			Vector3 torque;
 			Vector3 inverseInertia;
-			Matrix3 inverseInteriaTensor;
+			Matrix3 inverseInertiaTensor;
 		};
 	}
 }

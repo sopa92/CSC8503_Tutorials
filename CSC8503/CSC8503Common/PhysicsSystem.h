@@ -38,6 +38,7 @@ namespace NCL {
 			void UpdateObjectAABBs();
 
 			void ImpulseResolveCollision(GameObject& a , GameObject&b, CollisionDetection::ContactPoint& p) const;
+			void ResolveSpringCollision(GameObject& a, GameObject& b, CollisionDetection::ContactPoint& p) const;
 
 			GameWorld& gameWorld;
 
@@ -46,6 +47,8 @@ namespace NCL {
 			float	dTOffset;
 			float	globalDamping;
 			float	frameDT;
+			float	springRestingLength;
+			float	springCoefficient;
 
 			std::set<CollisionDetection::CollisionInfo> allCollisions;
 			std::set<CollisionDetection::CollisionInfo>		broadphaseCollisions;

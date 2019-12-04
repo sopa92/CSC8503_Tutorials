@@ -204,26 +204,26 @@ void TutorialGame::DebugObjectMovement() {
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(10, 0, 0));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(50, 0, 0));
 		}
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(-10, 0, 0));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(-50, 0, 0));
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -10));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -50));
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::DOWN)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 10));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 50));
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD5)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 50, 0));
 		}
 
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD0)) {
-			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 10, 0));
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -50, 0));
 		}
 	}
 }
@@ -346,7 +346,7 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	InitMixedGridWorld(10, 10, 3.5f, 3.5f);
+	Spa_InitMixedGridWorld(10, 10, 3.5f, 3.5f);
 	//InitCubeGridWorld(10, 10, 4.f, 4.f, Vector3(1, 1, 1));
 	//InitSphereGridWorld(10, 10, 4.f, 4.f, 1.f);
 	AddGooseToWorld(Vector3(30, 2, 0));
@@ -356,20 +356,20 @@ void TutorialGame::InitWorld() {
 	AddCharacterToWorld(Vector3(45, 2, 0));
 
 	AddFloorToWorld(Vector3(0, -2, 0));
+	AddPoolToWorld(Vector3(0, -2, -120));
+	AddFloorToWorld(Vector3(-45, -2, -120), Vector3(15, 2, 60));
+	AddFloorToWorld(Vector3(45, -2, -120), Vector3(15, 2, 60));
 }
 
 //From here on it's functions to add in objects to the world!
 
 /*
-
 A single function to add a large immoveable cube to the bottom of our world
-
 */
-GameObject* TutorialGame::AddFloorToWorld(const Vector3& position) {
+GameObject* TutorialGame::AddFloorToWorld(const Vector3& position, Vector3 floorSize) {
 	GameObject* floor = new GameObject("floor");
 	floor->SetLayer(LayerType::FLOOR);
 
-	Vector3 floorSize = Vector3(100, 2, 100);
 	AABBVolume* volume = new AABBVolume(floorSize);
 	floor->SetBoundingVolume((CollisionVolume*)volume);
 	floor->GetTransform().SetWorldScale(floorSize);
@@ -384,6 +384,27 @@ GameObject* TutorialGame::AddFloorToWorld(const Vector3& position) {
 	world->AddGameObject(floor);
 
 	return floor;
+}
+
+GameObject* TutorialGame::AddPoolToWorld(const Vector3& position) {
+	GameObject* pool = new GameObject("pool");
+	pool->SetLayer(LayerType::WATER);
+
+	Vector3 poolSize = Vector3(30, 2, 60);
+	AABBVolume* volume = new AABBVolume(poolSize);
+	pool->SetBoundingVolume((CollisionVolume*)volume);
+	pool->GetTransform().SetWorldScale(poolSize);
+	pool->GetTransform().SetWorldPosition(position);
+	OGLTexture* waterTex = (OGLTexture*)TextureLoader::LoadAPITexture("water.tga");
+	pool->SetRenderObject(new RenderObject(&pool->GetTransform(), cubeMesh, waterTex, basicShader));
+	pool->SetPhysicsObject(new PhysicsObject(&pool->GetTransform(), pool->GetBoundingVolume()));
+	pool->GetPhysicsObject()->SetInverseMass(0);
+	pool->GetPhysicsObject()->SetElasticity(150.0f);
+	pool->GetPhysicsObject()->InitWaterInertia();
+
+	world->AddGameObject(pool);
+
+	return pool;
 }
 
 /*
@@ -444,7 +465,7 @@ GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimens
 	}
 	cube->GetPhysicsObject()->SetInverseMass(inverseMass);
 	cube->GetPhysicsObject()->InitCubeInertia();
-
+	cube->GetPhysicsObject()->SetStiffness(20.f);
 	world->AddGameObject(cube);
 
 	return cube;
@@ -469,6 +490,7 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 
 	goose->GetPhysicsObject()->SetInverseMass(inverseMass);
 	goose->GetPhysicsObject()->InitSphereInertia(false);
+	goose->GetPhysicsObject()->SetStiffness(300.f);
 	
 	world->AddGameObject(goose);
 
@@ -561,35 +583,41 @@ void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacin
 		for (int z = 0; z < numRows; ++z) {
 			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + positionTranslation;
 			if (rand() % 2) {
-				AddSphereToWorld(position, radius, true, 0.3f, 1.0f);
+				AddSphereToWorld(position, radius, true, 1.0f, 1.0f); // highly elastic material (like a rubber ball) 
 			}
 			else {
-				AddSphereToWorld(position, radius, false, 0.8f, 1.0f);
+				AddSphereToWorld(position, radius, false, 0.01f, 1.0f); // low elasticity material (like steel)
 			}
 		}
 	}
-	AddFloorToWorld(Vector3(0, -2, 0));
+	//AddFloorToWorld(Vector3(0, -2, 0));
 }
 
-void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
+//void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
+//	float sphereRadius = 1.0f;
+//	Vector3 cubeDims = Vector3(1, 1, 1);
+//
+//	for (int x = 0; x < numCols; ++x) {
+//		for (int z = 0; z < numRows; ++z) {
+//			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + Vector3(-50,0, -30);
+//
+//			if (rand() % 2) {
+//				AddCubeToWorld(position, cubeDims);
+//			}
+//			else {
+//				AddSphereToWorld(position, sphereRadius);
+//			}
+//		}
+//	}
+//	AddFloorToWorld(Vector3(0, -2, 0));
+//}
+
+void TutorialGame::Spa_InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
 	float sphereRadius = 1.0f;
 	Vector3 cubeDims = Vector3(1, 1, 1);
 
 	InitSphereGridWorld(numRows, numCols, rowSpacing, colSpacing, sphereRadius, Vector3(0, 0, 0));
 	InitCubeGridWorld(numRows, numCols, rowSpacing, colSpacing, cubeDims, Vector3(-50, 0, -30));
-	//for (int x = 0; x < numCols; ++x) {
-	//	for (int z = 0; z < numRows; ++z) {
-	//		Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + Vector3(-50,0, -30);
-
-	//		if (rand() % 2) {
-	//			AddCubeToWorld(position, cubeDims, );
-	//		}
-	//		/*else {
-	//			AddSphereToWorld(position, sphereRadius, false);
-	//		}*/
-	//	}
-	//}
-	AddFloorToWorld(Vector3(0, -2, 0));
 }
 
 void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims, const Vector3& positionTranslation) {
@@ -597,14 +625,14 @@ void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing,
 		for (int z = 1; z < numRows+1; ++z) {
 			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + positionTranslation;
 			if (rand() % 2) {
-				AddCubeToWorld(position, cubeDims, 0.88f, 1.0f);
+				AddCubeToWorld(position, cubeDims, 0.99f, 1.0f); // highly elastic material (like a rubber ball) 
 			}
 			else {
-				AddCubeToWorld(position, cubeDims, 0.11f, 1.0f);
+				AddCubeToWorld(position, cubeDims, 0.02f, 1.0f); // low elasticity material (like steel)
 			}
 		}
 	}
-	AddFloorToWorld(Vector3(0, -2, 0));
+	//AddFloorToWorld(Vector3(0, -2, 0));
 }
 
 void TutorialGame::BridgeConstraintTest() {

@@ -21,7 +21,7 @@ void PhysicsObject::ApplyAngularImpulse(const Vector3& force) {	//scales its inp
 	/*if (force.Length() > 0) {
 		bool a = true;
 	}*/
-	angularVelocity += inverseInteriaTensor * force;
+	angularVelocity += inverseInertiaTensor * force;
 }
 
 void PhysicsObject::ApplyLinearImpulse(const Vector3& force) {	//scales its input by the appropriate inverse mass representation, and adds it to the appropriate velocity vector.
@@ -37,6 +37,11 @@ void PhysicsObject::AddForceAtPosition(const Vector3& addedForce, const Vector3&
 
 	force  += addedForce;
 	torque += Vector3::Cross(localPos, addedForce);
+}
+
+void PhysicsObject::AddForceAroundPosition(const Vector3& addedForce, const Vector3& position) {
+	force += addedForce;
+	torque += Vector3::Cross(position, addedForce);
 }
 
 void PhysicsObject::AddTorque(const Vector3& addedTorque) {
@@ -58,6 +63,18 @@ void PhysicsObject::InitCubeInertia() {
 	inverseInertia.x = (12.0f * inverseMass) / (dimsSqr.y + dimsSqr.z);
 	inverseInertia.y = (12.0f * inverseMass) / (dimsSqr.x + dimsSqr.z);
 	inverseInertia.z = (12.0f * inverseMass) / (dimsSqr.x + dimsSqr.y);
+}
+
+void PhysicsObject::InitWaterInertia() {
+	Vector3 dimensions = transform->GetLocalScale();
+
+	Vector3 fullWidth = dimensions * 2;
+
+	Vector3 dimsSqr = fullWidth * fullWidth;
+
+	inverseInertia.x = (2.0f * inverseMass) / (dimsSqr.y + dimsSqr.z);
+	inverseInertia.y = (2.0f * inverseMass) / (dimsSqr.x + dimsSqr.z);
+	inverseInertia.z = (2.0f * inverseMass) / (dimsSqr.x + dimsSqr.y);
 }
 
 void PhysicsObject::InitSphereInertia(bool isHollow) {
@@ -82,5 +99,5 @@ void PhysicsObject::UpdateInertiaTensor() {
 	Matrix3 invOrientation	= Matrix3(q.Conjugate());
 	Matrix3 orientation		= Matrix3(q);
 
-	inverseInteriaTensor = orientation * Matrix3::Scale(inverseInertia) *invOrientation;
+	inverseInertiaTensor = orientation * Matrix3::Scale(inverseInertia) *invOrientation;
 }

@@ -12,7 +12,7 @@ using std::vector;
 
 namespace NCL {
 	enum class LayerType {
-		PLAYER, OBJECT, CAMERA, FLOOR, CUBE, SPHERE
+		PLAYER, OBJECT, CAMERA, FLOOR, CUBE, SPHERE, WATER
 	};
 	namespace CSC8503 {
 		class NetworkObject;

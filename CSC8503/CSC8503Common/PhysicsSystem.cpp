@@ -170,17 +170,40 @@ void PhysicsSystem::BasicCollisionDetection() {
 			CollisionDetection::CollisionInfo info;
 
 			if (CollisionDetection::ObjectIntersection(*i, *j, info)) {	// will return true if a collision has taken place
-				/*if (!((*i)->GetName() == "character" || (*i)->GetName() == "keeper" || (*i)->GetName() == "goose" || (*i)->GetName() == "floor")) {
-					std::cout << " Collision between " << (*i)->GetName() << " and " << (*j)->GetName() << std::endl;
-				}*/
-
+				
+				//std::cout << " Collision between " << (*i)->GetName() << " and " << (*j)->GetName() << std::endl;
 				//will add the impulses to instantaneously change our linear and angular velocity such that the objects will move apart
-				ImpulseResolveCollision(*info.a, *info.b, info.point); 
+				//ImpulseResolveCollision(*info.a, *info.b, info.point);
+							
+				ResolveSpringCollision(*info.a, *info.b, info.point);
+				
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);	// we insert the successfully detected collision into an STL::List,	which will let us keep track of objects that are colliding
 			}
 		}
 	}
+}
+
+void PhysicsSystem::ResolveSpringCollision(GameObject& a, GameObject& b, CollisionDetection::ContactPoint& p) const {
+
+	PhysicsObject* physA = a.GetPhysicsObject();
+	PhysicsObject* physB = b.GetPhysicsObject();
+
+	// model spring with resting length of 0, attached to collision points of the collision
+	const Vector3 springPositionA = p.localA;
+	const Vector3 springPositionB = p.localB;
+	
+	// temporary spring being extended along the collision normal n by penetration distance p
+	const Vector3 springExtensionDirection = p.normal;
+	const float springExtensionLength = p.penetration;
+
+	Vector3 springExtension = springExtensionDirection * springExtensionLength;
+
+	// apply force proportional to penetration distance, at collision point on each object, in direction of collision normal
+	const Vector3 forceOnObjectA = -springExtension * physA->GetStiffness();
+	physA->AddForceAtPosition(forceOnObjectA, springPositionA);
+	const Vector3 forceOnObjectB = springExtension * physB->GetStiffness();
+	physB->AddForceAtPosition(forceOnObjectB, springPositionB);
 }
 
 /*
@@ -198,7 +221,8 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 	if (totalMass == 0.0f) {
 		return;
 	}
-																			// Separate them out using projection
+	
+	// Separate them out using projection
 	/* we push each object along the collision normal, by an amount proportional to the penetration distance, and the object’s inverse mass.
 	By dividing each object’s mass by the totalMass variable, we make it such that between the two calculations, the object’s move by a total
 	amount of p.penetration away from each other, but a ’heavier’ object will move by less, as it makes up less of the "total mass" */

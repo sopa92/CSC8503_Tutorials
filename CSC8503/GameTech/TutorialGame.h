@@ -27,6 +27,7 @@ namespace NCL {
 			*/
 			void InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius, const Vector3& positionTranslation);
 			void InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing);
+			void Spa_InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing);
 			void InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims, const Vector3& positionTranslation);
 			void BridgeConstraintTest();
 			void SimpleGJKTest();
@@ -37,7 +38,8 @@ namespace NCL {
 			void LockedObjectMovement();
 			void LockedCameraMovement();
 
-			GameObject* AddFloorToWorld(const Vector3& position);
+			GameObject* AddFloorToWorld(const Vector3& position, Vector3 floorSize = Vector3(60, 2, 60));
+			GameObject* AddPoolToWorld(const Vector3& position);
 			GameObject* AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float elasticity, float inverseMass = 10.0f);
 			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass = 10.0f);
 			//IT'S HAPPENING
