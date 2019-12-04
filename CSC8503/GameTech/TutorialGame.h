@@ -25,9 +25,9 @@ namespace NCL {
 			in the module. Feel free to mess around with them to see different objects being created in different
 			test scenarios (constraints, collision types, and so on). 
 			*/
-			void InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius);
+			void InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius, const Vector3& positionTranslation);
 			void InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing);
-			void InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims);
+			void InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims, const Vector3& positionTranslation);
 			void BridgeConstraintTest();
 			void SimpleGJKTest();
 
@@ -38,8 +38,8 @@ namespace NCL {
 			void LockedCameraMovement();
 
 			GameObject* AddFloorToWorld(const Vector3& position);
-			GameObject* AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float inverseMass = 10.0f);
-			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
+			GameObject* AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float elasticity, float inverseMass = 10.0f);
+			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass = 10.0f);
 			//IT'S HAPPENING
 			GameObject* AddGooseToWorld(const Vector3& position);
 			GameObject* AddParkKeeperToWorld(const Vector3& position);

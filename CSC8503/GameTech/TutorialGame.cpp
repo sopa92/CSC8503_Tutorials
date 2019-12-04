@@ -187,25 +187,28 @@ void TutorialGame::DebugObjectMovement() {
 //If we've selected an object, we can manipulate it with some key presses
 	if (inSelectionMode && selectionObject) {
 		//Twist the selected object!
-		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD6)) {
+			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 0, -10));
+		}
+
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD4)) {
+			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 0, 10));
+		}
+
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD8)) {
 			selectionObject->GetPhysicsObject()->AddTorque(Vector3(-10, 0, 0));
 		}
 
-		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD2)) {
 			selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
 		}
 
-		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUM7)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 10, 0));
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(10, 0, 0));
 		}
-
-		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUM8)) {
-			selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, -10, 0));
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(-10, 0, 0));
 		}
-
-		//if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
-		//	selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
-		//}
 
 		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP)) {
 			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -10));
@@ -215,8 +218,12 @@ void TutorialGame::DebugObjectMovement() {
 			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 10));
 		}
 
-		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUM5)) {
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD5)) {
 			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
+		}
+
+		if (Window::GetKeyboard()->KeyDown(KeyboardKeys::NUMPAD0)) {
+			selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 10, 0));
 		}
 	}
 }
@@ -340,6 +347,8 @@ void TutorialGame::InitWorld() {
 	physics->Clear();
 
 	InitMixedGridWorld(10, 10, 3.5f, 3.5f);
+	//InitCubeGridWorld(10, 10, 4.f, 4.f, Vector3(1, 1, 1));
+	//InitSphereGridWorld(10, 10, 4.f, 4.f, 1.f);
 	AddGooseToWorld(Vector3(30, 2, 0));
 	AddAppleToWorld(Vector3(35, 2, 0));
 
@@ -384,7 +393,7 @@ rigid body representation. This and the cube function will let you build a lot o
 physics worlds. You'll probably need another function for the creation of OBB cubes too.
 
 */
-GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float inverseMass) {
+GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float elasticity, float inverseMass) {
 	GameObject* sphere = new GameObject("sphere");
 	sphere->SetLayer(LayerType::SPHERE);
 
@@ -398,7 +407,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 	sphere->SetPhysicsObject(new PhysicsObject(&sphere->GetTransform(), sphere->GetBoundingVolume()));
 
 	sphere->GetPhysicsObject()->SetInverseMass(inverseMass);
-
+	sphere->GetPhysicsObject()->SetElasticity(elasticity);
 	if (isHollow)
 	{
 		sphere->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
@@ -415,7 +424,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 	return sphere;
 }
 
-GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass) {
+GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass) {
 	GameObject* cube = new GameObject("cube");
 	cube->SetLayer(LayerType::CUBE);
 	AABBVolume* volume = new AABBVolume(dimensions);
@@ -427,7 +436,12 @@ GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimens
 
 	cube->SetRenderObject(new RenderObject(&cube->GetTransform(), cubeMesh, basicTex, basicShader));
 	cube->SetPhysicsObject(new PhysicsObject(&cube->GetTransform(), cube->GetBoundingVolume()));
-
+	cube->GetPhysicsObject()->SetElasticity(elasticity);
+	if (elasticity > 0.5f) {
+		cube->GetRenderObject()->SetColour(Vector4(0, 0, 1, 1));
+	}else {
+		cube->GetRenderObject()->SetColour(Vector4(0, 1, 1, 1));
+	}
 	cube->GetPhysicsObject()->SetInverseMass(inverseMass);
 	cube->GetPhysicsObject()->InitCubeInertia();
 
@@ -542,11 +556,16 @@ GameObject* TutorialGame::AddAppleToWorld(const Vector3& position) {
 	return apple;
 }
 
-void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius) {
+void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius, const Vector3& positionTranslation) {
 	for (int x = 0; x < numCols; ++x) {
 		for (int z = 0; z < numRows; ++z) {
-			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
-			AddSphereToWorld(position, radius, 1.0f);
+			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + positionTranslation;
+			if (rand() % 2) {
+				AddSphereToWorld(position, radius, true, 0.3f, 1.0f);
+			}
+			else {
+				AddSphereToWorld(position, radius, false, 0.8f, 1.0f);
+			}
 		}
 	}
 	AddFloorToWorld(Vector3(0, -2, 0));
@@ -556,26 +575,33 @@ void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing
 	float sphereRadius = 1.0f;
 	Vector3 cubeDims = Vector3(1, 1, 1);
 
-	for (int x = 0; x < numCols; ++x) {
-		for (int z = 0; z < numRows; ++z) {
-			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
+	InitSphereGridWorld(numRows, numCols, rowSpacing, colSpacing, sphereRadius, Vector3(0, 0, 0));
+	InitCubeGridWorld(numRows, numCols, rowSpacing, colSpacing, cubeDims, Vector3(-50, 0, -30));
+	//for (int x = 0; x < numCols; ++x) {
+	//	for (int z = 0; z < numRows; ++z) {
+	//		Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + Vector3(-50,0, -30);
 
-			if (rand() % 2) {
-				AddCubeToWorld(position, cubeDims);
-			}
-			else {
-				AddSphereToWorld(position, sphereRadius, false);
-			}
-		}
-	}
+	//		if (rand() % 2) {
+	//			AddCubeToWorld(position, cubeDims, );
+	//		}
+	//		/*else {
+	//			AddSphereToWorld(position, sphereRadius, false);
+	//		}*/
+	//	}
+	//}
 	AddFloorToWorld(Vector3(0, -2, 0));
 }
 
-void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims) {
+void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims, const Vector3& positionTranslation) {
 	for (int x = 1; x < numCols+1; ++x) {
 		for (int z = 1; z < numRows+1; ++z) {
-			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
-			AddCubeToWorld(position, cubeDims, 1.0f);
+			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + positionTranslation;
+			if (rand() % 2) {
+				AddCubeToWorld(position, cubeDims, 0.88f, 1.0f);
+			}
+			else {
+				AddCubeToWorld(position, cubeDims, 0.11f, 1.0f);
+			}
 		}
 	}
 	AddFloorToWorld(Vector3(0, -2, 0));
