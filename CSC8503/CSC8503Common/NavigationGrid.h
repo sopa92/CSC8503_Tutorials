@@ -11,8 +11,7 @@ namespace NCL {
 
 			Vector3		position;
 
-			float f;
-			float g;
+			float f, g;
 
 			int type;
 
