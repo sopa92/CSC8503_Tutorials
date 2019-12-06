@@ -5,9 +5,10 @@
 namespace NCL {
 	namespace CSC8503 {
 
-		class State;
+		class State;	// Predeclare the classes we need
 		class StateTransition;
 
+		// Typedefs to make life easier !
 		typedef std::multimap<State*, StateTransition*> TransitionContainer;
 		typedef TransitionContainer::iterator TransitionIterator;
 
