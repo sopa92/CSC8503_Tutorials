@@ -27,6 +27,11 @@ void PhysicsSystem::SetGravity(const Vector3& g) {
 	gravity = g;
 }
 
+void PhysicsSystem::CollectObject(GameObject* collectable) {	
+	collectedObjects.push_back(collectable);
+	collectable->SetAsCollected(true);
+}
+
 /*
 
 If the 'game' is ever reset, the PhysicsSystem must be
@@ -103,7 +108,7 @@ void PhysicsSystem::Update(float dt) {
 		dTOffset -= iterationDt; 
 	}
 	ClearForces();	//Once we've finished with the forces, reset them to zero
-
+	
 	UpdateCollisionList(); //Remove any old collisions
 	//std::cout << iteratorCount << " , " << iterationDt << std::endl;
 	float time = testTimer.GetTimeDeltaSeconds();
@@ -186,7 +191,9 @@ void PhysicsSystem::BasicCollisionDetection() {
 						(info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() != LayerType::FLOOR)
 						))
 						ResolveSpringCollision(*info.a, *info.b, info.point);
-				
+					if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::OBJECT) {
+						CollectObject(info.b);
+					}
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);	// we insert the successfully detected collision into an STL::List,	which will let us keep track of objects that are colliding
 			}
@@ -305,19 +312,18 @@ void PhysicsSystem::BroadPhase() {
 		tree.Insert(*i, pos, halfSizes);
 	}
 
-	tree.OperateOnContents( [&](std::list<QuadTreeEntry<GameObject*>>& data) {
-			CollisionDetection::CollisionInfo info;
-			for (auto i = data.begin(); i != data.end(); ++i) {
-				for (auto j = std::next(i); j != data.end(); ++j) {
-					// is this pair of items already in the collision set -
-					// if the same pair is in another quadtree node together etc
-					info.a = min((*i).object, (*j).object);
-					info.b = max((*i).object, (*j).object);
-					broadphaseCollisions.insert(info);
-				}
+	tree.OperateOnContents([&](std::list<QuadTreeEntry<GameObject*>>& data) {
+		CollisionDetection::CollisionInfo info;
+		for (auto i = data.begin(); i != data.end(); ++i) {
+			for (auto j = std::next(i); j != data.end(); ++j) {
+				// is this pair of items already in the collision set -
+				// if the same pair is in another quadtree node together etc
+				info.a = min((*i).object, (*j).object);
+				info.b = max((*i).object, (*j).object);
+				broadphaseCollisions.insert(info);
 			}
 		}
-	);
+		});
 }
 
 /*
@@ -328,9 +334,38 @@ void PhysicsSystem::NarrowPhase() {
 	for (std::set<CollisionDetection::CollisionInfo>::iterator 	i = broadphaseCollisions.begin(); i != broadphaseCollisions.end(); ++i) {
 		CollisionDetection::CollisionInfo info = *i;
 		if (CollisionDetection::ObjectIntersection(info.a, info.b, info)) {
-			info.framesLeft = numCollisionFrames;
-			ImpulseResolveCollision(*info.a, *info.b, info.point);
-			allCollisions.insert(info); // insert into our main set
+			if (info.a->IsActive() && info.b->IsActive()) {
+				
+				if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::OBJECT) {
+					CollectObject(info.b);
+				}
+				else if (info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::OBJECT) {
+					CollectObject(info.a);
+				}
+				
+				if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::NEST || 
+					info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::NEST) {
+					playerIsInNest = true;
+					if (collectedObjects.size() > 0) {
+						int score = 0;
+						for (int i = 0; i < collectedObjects.size(); ++i) {
+							if (collectedObjects[i]->GetName() == "apple") {
+								++score;
+							}
+							else {
+								score += 5;
+							}
+						}
+						gameWorld.SetScore(score);
+					}
+				}
+				else {
+					playerIsInNest = false;
+				}
+				info.framesLeft = numCollisionFrames;
+				ImpulseResolveCollision(*info.a, *info.b, info.point);
+				allCollisions.insert(info); // insert into our main set
+			}
 		}
 	}
 }

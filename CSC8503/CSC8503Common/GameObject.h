@@ -12,7 +12,7 @@ using std::vector;
 
 namespace NCL {
 	enum class LayerType {
-		PLAYER, OBJECT, CAMERA, FLOOR, CUBE, SPHERE, WATER
+		PLAYER, ENEMY, OBJECT, CAMERA, FLOOR, CUBE, SPHERE, WATER, NEST
 	};
 	namespace CSC8503 {
 		class NetworkObject;
@@ -32,6 +32,9 @@ namespace NCL {
 
 			bool IsActive() const {
 				return isActive;
+			}
+			void SetAsActive(bool act) {
+				isActive = act;
 			}
 
 			const Transform& GetConstTransform() const {
@@ -77,9 +80,17 @@ namespace NCL {
 			bool GetBroadphaseAABB(Vector3&outsize) const;
 
 			void UpdateBroadphaseAABB();
+
+
 			LayerType GetLayer() { return layer; }
 			void SetLayer(LayerType type) { layer = type; }
 			
+			bool IsCollected() { return collected; }
+			void SetAsCollected(bool collect) {
+				collected = collect;
+				this->SetAsActive(false);
+			}
+
 		protected:
 			Transform			transform;
 
@@ -87,9 +98,11 @@ namespace NCL {
 			PhysicsObject*		physicsObject;
 			RenderObject*		renderObject;
 			NetworkObject*		networkObject;
-			LayerType	layer;
 			bool	isActive;
 			string	name;
+
+			LayerType	layer;
+			bool collected;
 
 			Vector3 broadphaseAABB;
 		};

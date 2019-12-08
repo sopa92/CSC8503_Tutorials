@@ -22,6 +22,10 @@ namespace NCL {
 			}
 
 			void SetGravity(const Vector3& g);
+
+			void CollectObject(GameObject* collectable);
+			vector<GameObject*> GetCollectedObjects() { return collectedObjects; }
+			bool IsPlayerInNest() {	return playerIsInNest; }
 		protected:
 			void BasicCollisionDetection();
 			void BroadPhase();
@@ -47,14 +51,14 @@ namespace NCL {
 			float	dTOffset;
 			float	globalDamping;
 			float	frameDT;
-			float	springRestingLength;
-			float	springCoefficient;
 
+			vector<GameObject*> collectedObjects;
 			std::set<CollisionDetection::CollisionInfo> allCollisions;
 			std::set<CollisionDetection::CollisionInfo>		broadphaseCollisions;
 			std::vector<CollisionDetection::CollisionInfo>	broadphaseCollisionsVec;
 			bool useBroadPhase		= true;
 			int numCollisionFrames	= 5;
+			bool playerIsInNest = false;
 		};
 	}
 }

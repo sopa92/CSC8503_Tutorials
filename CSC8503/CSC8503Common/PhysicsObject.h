@@ -15,14 +15,6 @@ namespace NCL {
 			PhysicsObject(Transform* parentTransform, const CollisionVolume* parentVolume);
 			~PhysicsObject();
 
-			Vector3 GetLinearVelocity() const {
-				return linearVelocity;
-			}
-
-			Vector3 GetAngularVelocity() const {
-				return angularVelocity;
-			}
-
 			Vector3 GetTorque() const {
 				return torque;
 			}
@@ -31,12 +23,11 @@ namespace NCL {
 				return force;
 			}
 
-			void SetInverseMass(float invMass) {
-				inverseMass = invMass;
-			}
-
 			float GetInverseMass() const {
 				return inverseMass;
+			}
+			void SetInverseMass(float invMass) {
+				inverseMass = invMass;
 			}
 
 			void ApplyAngularImpulse(const Vector3& force);
@@ -51,19 +42,22 @@ namespace NCL {
 
 
 			void ClearForces();
-
+			Vector3 GetLinearVelocity() const {
+				return linearVelocity;
+			}
 			void SetLinearVelocity(const Vector3& v) {
 				linearVelocity = v;
 			}
 
+			Vector3 GetAngularVelocity() const {
+				return angularVelocity;
+			}
 			void SetAngularVelocity(const Vector3& v) {
 				angularVelocity = v;
 			}
 
 			void InitCubeInertia();
-			void InitWaterInertia();
 			void InitSphereInertia(bool isHollow);
-
 			void UpdateInertiaTensor();
 
 			Matrix3 GetInertiaTensor() const {
@@ -75,26 +69,32 @@ namespace NCL {
 
 			float GetStiffness() const { return stiffness; }
 			void SetStiffness(float stiff) { stiffness = stiff; }
+			bool GetHandleLikeImpulse() const { return handleLikeImpulse; }
+			void SetHandleLikeImpulse(bool handling) { handleLikeImpulse = handling; }
+			bool GetHandleLikeSpring() const { return handleLikeSpring; }
+			void SetHandleLikeSpring(bool handling) { handleLikeSpring = handling; }
 
 		protected:
 			const CollisionVolume* volume;
-			Transform*		transform;
-
-			float inverseMass;
-			float elasticity;
-			float friction;
-			float stiffness;
+			Transform* transform;
 
 			//linear stuff
+			float inverseMass;
 			Vector3 linearVelocity;
-			Vector3 force;
-			
+			Vector3 force;			
 
 			//angular stuff
 			Vector3 angularVelocity;
 			Vector3 torque;
 			Vector3 inverseInertia;
 			Matrix3 inverseInertiaTensor;
+
+			float elasticity;
+			float friction;
+			float stiffness;
+
+			bool handleLikeImpulse;
+			bool handleLikeSpring;
 		};
 	}
 }

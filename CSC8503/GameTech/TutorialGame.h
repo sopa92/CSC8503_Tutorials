@@ -2,7 +2,6 @@
 #include "GameTechRenderer.h"
 #include "../CSC8503Common/PhysicsSystem.h"
 
-
 namespace NCL {
 	namespace CSC8503 {
 		class TutorialGame		{
@@ -38,16 +37,25 @@ namespace NCL {
 			void LockedObjectMovement();
 			void LockedCameraMovement();
 
-			GameObject* AddFloorToWorld(const Vector3& position, Vector3 floorSize = Vector3(60, 2, 60));
+			GameObject* AddFloorToWorld(
+				const Vector3& position, 
+				Vector3 floorSize = Vector3(60, 2, 60), 
+				OGLTexture* texture = nullptr, 
+				LayerType layer = LayerType::FLOOR, 
+				string name= "floor",
+				bool resolveAsSprings = false
+			);
 			GameObject* AddPoolToWorld(const Vector3& position);
 			GameObject* AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float elasticity, float inverseMass = 10.0f);
-			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass = 10.0f);
+			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass = 10.0f, Vector4 colour = Vector4(1,1,1,1), bool isAppleThrower=false);
 			//IT'S HAPPENING
 			GameObject* AddGooseToWorld(const Vector3& position);
 			GameObject* AddParkKeeperToWorld(const Vector3& position);
 			GameObject* AddCharacterToWorld(const Vector3& position);
 			GameObject* AddAppleToWorld(const Vector3& position);
 
+			void CreateBox();
+			void CreateFences();
 
 			GameTechRenderer*	renderer;
 			PhysicsSystem*		physics;
@@ -79,6 +87,13 @@ namespace NCL {
 			void LockCameraToObject(GameObject* o) {
 				lockedObject = o;
 			}
+			int applesSpawned;
+			int repetitions;
+			Vector3 gooseInitPos;
+			Vector3 appleThrowerPos;
+			bool enableAppleThrower = false;
+			bool isBasketEmpty = true;
+			int basketItems = 0;
 		};
 	}
 }
