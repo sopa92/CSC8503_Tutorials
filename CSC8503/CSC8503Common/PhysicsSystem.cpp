@@ -14,7 +14,7 @@ using namespace CSC8503;
 
 PhysicsSystem::PhysicsSystem(GameWorld& g) : gameWorld(g)	{
 	applyGravity	= false;
-	useBroadPhase	= false;	
+	useBroadPhase	= true;	
 	dTOffset		= 0.0f;
 	globalDamping	= 0.95f;
 	SetGravity(Vector3(0.0f, -9.8f, 0.0f));
@@ -140,7 +140,7 @@ void PhysicsSystem::UpdateCollisionList() {
 	}
 }
 
-void PhysicsSystem::UpdateObjectAABBs() {
+void PhysicsSystem::UpdateObjectAABBs() {	//this will let the PhysicsSystem see the latest correct bounding boxes for the game objects every frame
 	std::vector<GameObject*>::const_iterator first;
 	std::vector<GameObject*>::const_iterator last;
 	gameWorld.GetObjectIterators(first, last);
@@ -173,9 +173,19 @@ void PhysicsSystem::BasicCollisionDetection() {
 				
 				//std::cout << " Collision between " << (*i)->GetName() << " and " << (*j)->GetName() << std::endl;
 				//will add the impulses to instantaneously change our linear and angular velocity such that the objects will move apart
-				//ImpulseResolveCollision(*info.a, *info.b, info.point);
-							
-				ResolveSpringCollision(*info.a, *info.b, info.point);
+				PhysicsObject* physA = info.a->GetPhysicsObject();
+				PhysicsObject* physB = info.b->GetPhysicsObject();
+
+				/*if (physA->GetHandleLikeImpulse() && physB->GetHandleLikeImpulse())
+				{*/
+					ImpulseResolveCollision(*info.a, *info.b, info.point);
+				/*}
+				else;*/ 
+					if ((physA->GetHandleLikeSpring() || physB->GetHandleLikeSpring()) && (
+						(info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() != LayerType::FLOOR) || 
+						(info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() != LayerType::FLOOR)
+						))
+						ResolveSpringCollision(*info.a, *info.b, info.point);
 				
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);	// we insert the successfully detected collision into an STL::List,	which will let us keep track of objects that are colliding
@@ -194,16 +204,16 @@ void PhysicsSystem::ResolveSpringCollision(GameObject& a, GameObject& b, Collisi
 	const Vector3 springPositionB = p.localB;
 	
 	// temporary spring being extended along the collision normal n by penetration distance p
-	const Vector3 springExtensionDirection = p.normal;
-	const float springExtensionLength = p.penetration;
+	const Vector3 springExtendDirection = p.normal;
+	const float springExtendLength = p.penetration;
 
-	Vector3 springExtension = springExtensionDirection * springExtensionLength;
+	Vector3 springExtension = springExtendDirection * springExtendLength;
 
 	// apply force proportional to penetration distance, at collision point on each object, in direction of collision normal
 	const Vector3 forceOnObjectA = -springExtension * physA->GetStiffness();
-	physA->AddForceAtPosition(forceOnObjectA, springPositionA);
+	physA->AddForceAroundPosition(forceOnObjectA, springPositionA);
 	const Vector3 forceOnObjectB = springExtension * physB->GetStiffness();
-	physB->AddForceAtPosition(forceOnObjectB, springPositionB);
+	physB->AddForceAroundPosition(forceOnObjectB, springPositionB);
 }
 
 /*
@@ -280,15 +290,49 @@ compare the collisions that we absolutely need to.
 
 void PhysicsSystem::BroadPhase() {
 
+	broadphaseCollisions.clear();
+	QuadTree<GameObject*> tree(Vector2(1024, 1024), 7, 6);
+	
+	std::vector<GameObject*>::const_iterator first;
+	std::vector<GameObject*>::const_iterator last;
+	gameWorld.GetObjectIterators(first, last);
+	for (auto i = first; i != last; ++i) {	// iterating through all of the objects in the game world, Inserting them into the tree one after another
+		Vector3 halfSizes;
+		if (!(*i)->GetBroadphaseAABB(halfSizes)) {
+			continue;
+		}
+		Vector3 pos = (*i)->GetConstTransform().GetWorldPosition();
+		tree.Insert(*i, pos, halfSizes);
+	}
+
+	tree.OperateOnContents( [&](std::list<QuadTreeEntry<GameObject*>>& data) {
+			CollisionDetection::CollisionInfo info;
+			for (auto i = data.begin(); i != data.end(); ++i) {
+				for (auto j = std::next(i); j != data.end(); ++j) {
+					// is this pair of items already in the collision set -
+					// if the same pair is in another quadtree node together etc
+					info.a = min((*i).object, (*j).object);
+					info.b = max((*i).object, (*j).object);
+					broadphaseCollisions.insert(info);
+				}
+			}
+		}
+	);
 }
 
 /*
-
 The broadphase will now only give us likely collisions, so we can now go through them,
 and work out if they are truly colliding, and if so, add them into the main collision list
 */
 void PhysicsSystem::NarrowPhase() {
-
+	for (std::set<CollisionDetection::CollisionInfo>::iterator 	i = broadphaseCollisions.begin(); i != broadphaseCollisions.end(); ++i) {
+		CollisionDetection::CollisionInfo info = *i;
+		if (CollisionDetection::ObjectIntersection(info.a, info.b, info)) {
+			info.framesLeft = numCollisionFrames;
+			ImpulseResolveCollision(*info.a, *info.b, info.point);
+			allCollisions.insert(info); // insert into our main set
+		}
+	}
 }
 
 /*
