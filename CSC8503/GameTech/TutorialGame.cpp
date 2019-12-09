@@ -1,3 +1,8 @@
+/*
+
+http://soundbible.com/1187-Goose.html
+*/
+
 #include "TutorialGame.h"
 #include "../CSC8503Common/GameWorld.h"
 #include "../../Plugins/OpenGLRendering/OGLMesh.h"
@@ -208,6 +213,9 @@ void TutorialGame::LockedObjectMovement() {
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::SPACE)) {
 		lockedObject->GetPhysicsObject()->AddForce(Vector3(0,200,0));
+	}
+	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::H)) {
+		PlaySound("..\\..\\Assets\\GooseHonk.wav", NULL, SND_ASYNC);
 	}
 }
 
