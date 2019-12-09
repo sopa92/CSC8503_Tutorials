@@ -61,24 +61,24 @@ void PhysicsSystem::Update(float dt) {
 
 	float iterationDt = 1.0f / 120.0f; //Ideally we'll have 120 physics updates a second 
 
-	if (dTOffset > 8 * iterationDt) { //the physics engine cant catch up!
-		iterationDt = 1.0f / 15.0f; //it'll just have to run bigger timesteps...
-		//std::cout << "Setting physics iterations to 15" << iterationDt << std::endl;
-	}
-	else if (dTOffset > 4  * iterationDt) { //the physics engine cant catch up!
-		iterationDt = 1.0f / 30.0f; //it'll just have to run bigger timesteps...
-		//std::cout << "Setting iteration dt to 4 case " << iterationDt << std::endl;
-	}
-	else if (dTOffset > 2* iterationDt) { //the physics engine cant catch up!
-		iterationDt = 1.0f / 60.0f; //it'll just have to run bigger timesteps...
-		//std::cout << "Setting iteration dt to 2 case " << iterationDt << std::endl;
-	}
-	else {
-		//std::cout << "Running normal update " << iterationDt << std::endl;
-	}
+	//if (dTOffset > 8 * iterationDt) { //the physics engine cant catch up!
+	//	iterationDt = 1.0f / 15.0f; //it'll just have to run bigger timesteps...
+	//	//std::cout << "Setting physics iterations to 15" << iterationDt << std::endl;
+	//}
+	//else if (dTOffset > 4  * iterationDt) { //the physics engine cant catch up!
+	//	iterationDt = 1.0f / 30.0f; //it'll just have to run bigger timesteps...
+	//	//std::cout << "Setting iteration dt to 4 case " << iterationDt << std::endl;
+	//}
+	//else if (dTOffset > 2* iterationDt) { //the physics engine cant catch up!
+	//	iterationDt = 1.0f / 60.0f; //it'll just have to run bigger timesteps...
+	//	//std::cout << "Setting iteration dt to 2 case " << iterationDt << std::endl;
+	//}
+	//else {
+	//	//std::cout << "Running normal update " << iterationDt << std::endl;
+	//}
 
 	int constraintIterationCount = 10;
-	iterationDt = dt;
+	//iterationDt = dt;
 
 	if (useBroadPhase) {
 		UpdateObjectAABBs();
@@ -203,6 +203,8 @@ void PhysicsSystem::BasicCollisionDetection() {
 
 void PhysicsSystem::ResolveSpringCollision(GameObject& a, GameObject& b, CollisionDetection::ContactPoint& p) const {
 
+	if (a.GetPhysicsObject()->GetInverseMass() == 0 && b.GetPhysicsObject()->GetInverseMass() == 0)
+		return;
 	PhysicsObject* physA = a.GetPhysicsObject();
 	PhysicsObject* physB = b.GetPhysicsObject();
 
@@ -217,9 +219,9 @@ void PhysicsSystem::ResolveSpringCollision(GameObject& a, GameObject& b, Collisi
 	Vector3 springExtension = springExtendDirection * springExtendLength;
 
 	// apply force proportional to penetration distance, at collision point on each object, in direction of collision normal
-	const Vector3 forceOnObjectA = -springExtension * physA->GetStiffness();
+	const Vector3 forceOnObjectA = -springExtension * physB->GetStiffness();
 	physA->AddForceAroundPosition(forceOnObjectA, springPositionA);
-	const Vector3 forceOnObjectB = springExtension * physB->GetStiffness();
+	const Vector3 forceOnObjectB = springExtension * physA->GetStiffness();
 	physB->AddForceAroundPosition(forceOnObjectB, springPositionB);
 }
 
@@ -363,7 +365,14 @@ void PhysicsSystem::NarrowPhase() {
 					playerIsInNest = false;
 				}
 				info.framesLeft = numCollisionFrames;
-				ImpulseResolveCollision(*info.a, *info.b, info.point);
+				//ImpulseResolveCollision(*info.a, *info.b, info.point);
+				if ((info.a->GetPhysicsObject()->GetHandleLikeSpring() || info.b->GetPhysicsObject()->GetHandleLikeSpring()) && (
+					(info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() != LayerType::FLOOR) ||
+					(info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() != LayerType::FLOOR)
+					))
+					ResolveSpringCollision(*info.a, *info.b, info.point);
+				else 
+					ImpulseResolveCollision(*info.a, *info.b, info.point);
 				allCollisions.insert(info); // insert into our main set
 			}
 		}

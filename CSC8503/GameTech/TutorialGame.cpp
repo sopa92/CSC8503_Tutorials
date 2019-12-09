@@ -409,7 +409,7 @@ void TutorialGame::InitWorld() {
 
 	OGLTexture* waterTex = (OGLTexture*)TextureLoader::LoadAPITexture("water.tga");
 	AddFloorToWorld(Vector3(0, -2, -90), Vector3(30, 2, 60), waterTex, LayerType::WATER, "lake", true); //lake
-	AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
+	//AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
 
 
 	OGLTexture* islangTex = (OGLTexture*)TextureLoader::LoadAPITexture("island.jpg");
@@ -599,8 +599,9 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 
 	goose->GetPhysicsObject()->SetInverseMass(inverseMass);
 	goose->GetPhysicsObject()->InitSphereInertia(false);
-	goose->GetPhysicsObject()->SetStiffness(300.f);
+	goose->GetPhysicsObject()->SetStiffness(500.f);
 	goose->GetPhysicsObject()->SetHandleLikeImpulse(true);
+	goose->GetPhysicsObject()->SetHandleLikeSpring(true);
 	world->AddGameObject(goose);
 
 	return goose;
