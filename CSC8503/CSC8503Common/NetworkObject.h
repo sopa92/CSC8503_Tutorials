@@ -15,8 +15,8 @@ namespace NCL {
 		};
 
 		struct DeltaPacket : public GamePacket {
-			int		fullID		= -1;
-			int		objectID	= -1;
+			int		fullID		= -1;	//used to determine which NetworkState the position and	orientation should be a delta of
+			int		objectID	= -1;	//used as in FullPacket
 			char	pos[3];
 			char	orientation[4];
 
@@ -26,8 +26,8 @@ namespace NCL {
 			}
 		};
 
-		struct ClientPacket : public GamePacket {
-			int		lastID;
+		struct ClientPacket : public GamePacket {	//represents what data the client sends to the server
+			int		lastID;	//used to send to the server an acknowledgement of which NetworkState was last successfully received from the client
 			char	buttonstates[8];
 
 			ClientPacket() {
@@ -61,14 +61,14 @@ namespace NCL {
 
 			GameObject& object;
 
-			NetworkState lastFullState;
+			NetworkState lastFullState;	// latest full NetworkState
 
 			std::vector<NetworkState> stateHistory;
 
 			int deltaErrors;
 			int fullErrors;
 
-			int networkID;
+			int networkID;	// id of this object
 		};
 	}
 }
