@@ -10,7 +10,6 @@ namespace NCL {
 			~TutorialGame();
 
 			virtual void UpdateGame(float dt);
-
 		protected:
 			void InitialiseAssets();
 
@@ -45,9 +44,15 @@ namespace NCL {
 				string name= "floor",
 				bool resolveAsSprings = false
 			);
-			GameObject* AddPoolToWorld(const Vector3& position);
+			//GameObject* AddPoolToWorld(const Vector3& position);
 			GameObject* AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float elasticity, float inverseMass = 10.0f);
-			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass = 10.0f, Vector4 colour = Vector4(1,1,1,1), bool isAppleThrower=false);
+			GameObject* AddCubeToWorld(
+				const Vector3& position, 
+				Vector3 dimensions, 
+				float elasticity, 
+				float inverseMass = 10.0f, 
+				Vector4 colour = Vector4(1,1,1,1), 
+				bool isAppleThrower=false);
 			//IT'S HAPPENING
 			GameObject* AddGooseToWorld(const Vector3& position);
 			GameObject* AddParkKeeperToWorld(const Vector3& position);
@@ -87,13 +92,13 @@ namespace NCL {
 			void LockCameraToObject(GameObject* o) {
 				lockedObject = o;
 			}
+			void SpawnApples(int amount, float dt);
+			void ReSpawnApples(int amount);
 			int applesSpawned;
 			int repetitions;
 			Vector3 gooseInitPos;
 			Vector3 appleThrowerPos;
-			bool enableAppleThrower = false;
-			bool isBasketEmpty = true;
-			int basketItems = 0;
+			int applesRespawned = 0;
 		};
 	}
 }

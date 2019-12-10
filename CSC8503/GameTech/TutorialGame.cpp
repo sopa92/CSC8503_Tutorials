@@ -89,52 +89,50 @@ void TutorialGame::UpdateGame(float dt) {
 	else {
 		Debug::Print("(G)ravity off", Vector2(10, 40));
 	}
-	
-	if (enableAppleThrower) {
-		if (dt * 1000.0f > 7) {
-			if (repetitions % 5 == 0) {
-				int random = rand() % 7000 +1000;
-				GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
-				Sleep(50);				
-				appleInstance->GetPhysicsObject()->AddForce(Vector3(random*3.0f, random *1.f, random*(repetitions /13.f)));
-				++applesSpawned;
-			}
-			++repetitions;
-			if (repetitions > 100) {
-				enableAppleThrower = false;
-			}
-		}
-	}
+	SpawnApples(20, dt);
 	SelectObject();
 	MoveSelectedObject();
 
 	world->UpdateWorld(dt);
 	renderer->Update(dt);
 	physics->Update(dt);
+
+	applesRespawned = world->GetApplesToBeSpawned();
+	if (applesRespawned > 0) {
+		ReSpawnApples(applesRespawned);
+	}
+	applesSpawned -= applesRespawned;
 	int score = world->GetScore();
-	int collected = physics->GetCollectedObjects().size();
+	int collected = world->collectedObjects;
 	if (collected > 0) {
-		renderer->DrawString("Collected : " + std::to_string(collected) + "/" + std::to_string(applesSpawned) +"...", Vector2(10, 100), Vector4(1, 1, 1, 1));
-		if(collected==applesSpawned)
+		renderer->DrawString("Collected : " + std::to_string(collected) + "/" + std::to_string(applesSpawned) + "...", Vector2(10, 100), Vector4(1, 1, 1, 1));
+		if (collected == applesSpawned)
 			renderer->DrawString("You must return to nest quickly!", Vector2(10, 80), Vector4(1, 1, 1, 1));
 	}
 
 	CollisionDetection::CollisionInfo info;
-	if (score > 0 ){
-		if (CollisionDetection::ObjectIntersection(world->GetPlayer(), world->GetNest(), info)) {
-			int itemsToPutInBasket = collected - basketItems;
-			if (itemsToPutInBasket > 0) {
-				for (int i = 0; i < itemsToPutInBasket; ++i) {
-					AddSphereToWorld(Vector3(-3.63f + i * 0.01f, 4 + i / 2, -86.6f + i * 0.001f), 0.3f, false, 0, 1);
-					++basketItems;
+	if (CollisionDetection::ObjectIntersection(world->GetPlayer(), world->GetNest(), info)) {
+
+		int itemsToPutInBasket = world->carryingObjects.size();
+		if (itemsToPutInBasket > 0) {
+			for (int i = 0; i < itemsToPutInBasket; ++i) {
+				if (world->carryingObjects[i]->GetName() == "apple") {
+					++score;
 				}
-				//isBasketEmpty = false;
+				else {
+					score += 5;
+				}
+				AddSphereToWorld(Vector3(-3.63f + i * 0.01f, 4 + i / 2.0f, -86.6f + i * 0.001f), 0.3f, false, 0, 1);
 			}
+			world->SetScore(score);
+			world->carryingObjects.clear();
 		}
-		if(score==applesSpawned)
+	}
+	if (score > 0) {
+		if (score == applesSpawned)
 			renderer->DrawString("You won!!!!", Vector2(10, 60), Vector4(0.9f, 0.9f, 0.9f, 1));
 		else
-		renderer->DrawString("Score : " + std::to_string(score), Vector2(10, 60), Vector4(0.9f, 0.9f, 0.9f, 1));
+			renderer->DrawString("Score : " + std::to_string(score), Vector2(10, 60), Vector4(0.9f, 0.9f, 0.9f, 1));
 	}
 	Debug::FlushRenderables();
 	renderer->Render();
@@ -153,7 +151,7 @@ void TutorialGame::UpdateKeys() {
 	if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::G)) {
 		useGravity = !useGravity; //Toggle gravity!
 		physics->UseGravity(useGravity);
-		enableAppleThrower = true;
+		world->SetEnableAppleThrower(true);
 		
 	}
 	//Running certain physics updates in a consistent order might cause some
@@ -195,19 +193,40 @@ void TutorialGame::LockedObjectMovement() {
 	Vector3 fwdAxis = Vector3::Cross(Vector3(0, 1, 0), rightAxis);
 	Vector3 vertAxis = Vector3::Cross(fwdAxis, rightAxis);
 
-	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {
+	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {		
+		/*if(lockedObject->GetTransform().GetWorldOrientation().y < 0.5f && lockedObject->GetTransform().GetWorldOrientation().y > -0.5f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));
+		else if (lockedObject->GetTransform().GetWorldOrientation().y > 0.5f || lockedObject->GetTransform().GetWorldOrientation().y < -0.5f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));*/
 		lockedObject->GetPhysicsObject()->AddForce(-rightAxis);
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
+		/*if (lockedObject->GetTransform().GetWorldOrientation().y > -0.5f && lockedObject->GetTransform().GetWorldOrientation().y < 0.5f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
+		else if (lockedObject->GetTransform().GetWorldOrientation().y < -0.5f || lockedObject->GetTransform().GetWorldOrientation().y > 0.5f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));*/
 		lockedObject->GetPhysicsObject()->AddForce(rightAxis);
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP)) {
+		if (lockedObject->GetTransform().GetWorldOrientation().y < 0.01f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));
+		if (lockedObject->GetTransform().GetWorldOrientation().y > 0.01f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
 		lockedObject->GetPhysicsObject()->AddForce(fwdAxis);
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::DOWN)) {
+		if (lockedObject->GetTransform().GetWorldOrientation().y > 0.01f && lockedObject->GetTransform().GetWorldOrientation().y < 0.9f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));
+		else if (lockedObject->GetTransform().GetWorldOrientation().y < 0.01f && lockedObject->GetTransform().GetWorldOrientation().y > -0.9f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
+
+		/*else if (lockedObject->GetTransform().GetWorldOrientation().y < 0.0f && lockedObject->GetTransform().GetWorldOrientation().y > -0.99f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
+		else if (lockedObject->GetTransform().GetWorldOrientation().y < -0.99f)
+			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));*/
 		lockedObject->GetPhysicsObject()->AddForce(-fwdAxis);
 	}
 
@@ -417,7 +436,7 @@ void TutorialGame::InitWorld() {
 
 	OGLTexture* waterTex = (OGLTexture*)TextureLoader::LoadAPITexture("water.tga");
 	AddFloorToWorld(Vector3(0, -2, -90), Vector3(30, 2, 60), waterTex, LayerType::WATER, "lake", true); //lake
-	//AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
+	AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
 
 
 	OGLTexture* islangTex = (OGLTexture*)TextureLoader::LoadAPITexture("island.jpg");
@@ -469,30 +488,6 @@ GameObject* TutorialGame::AddFloorToWorld(const Vector3& position, Vector3 floor
 
 	return floor;
 }
-
-//GameObject* TutorialGame::AddPoolToWorld(const Vector3& position) {
-//	GameObject* pool = new GameObject("pool");
-//	pool->SetLayer(LayerType::WATER);
-//
-//	Vector3 poolSize = Vector3(30, 2, 60);
-//	AABBVolume* volume = new AABBVolume(poolSize);
-//	pool->SetBoundingVolume((CollisionVolume*)volume);
-//	pool->GetTransform().SetWorldScale(poolSize);
-//	pool->GetTransform().SetWorldPosition(position);
-//	OGLTexture* waterTex = (OGLTexture*)TextureLoader::LoadAPITexture("water.tga");
-//	pool->SetRenderObject(new RenderObject(&pool->GetTransform(), cubeMesh, waterTex, basicShader));
-//	pool->SetPhysicsObject(new PhysicsObject(&pool->GetTransform(), pool->GetBoundingVolume()));
-//	pool->GetPhysicsObject()->SetInverseMass(0);
-//	pool->GetPhysicsObject()->SetElasticity(0.8f);
-//	pool->GetPhysicsObject()->InitCubeInertia();
-//
-//	pool->GetPhysicsObject()->SetHandleLikeSpring(true);
-//	pool->GetPhysicsObject()->SetStiffness(300.f);
-//	pool->GetPhysicsObject()->SetHandleLikeImpulse(false);
-//	world->AddGameObject(pool);
-//
-//	return pool;
-//}
 
 /*
 
@@ -554,8 +549,40 @@ void TutorialGame::CreateFences() {
 	AddCubeToWorld(Vector3(-22, 1, -178), Vector3(1.5f, 1.5f, 1), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
 	AddCubeToWorld(Vector3(-20, 1, -178), Vector3(1.5f, 1.5f, 1), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
 	AddCubeToWorld(Vector3(-17, 1, -178), Vector3(1.5f, 1.5f, 1), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
-	//AddCubeToWorld(Vector3(-45, 2, -200), Vector3(1, 2, 10), 0, 0, Vector4(0.1, 0.1, 0.1, 1));
-	//AddCubeToWorld(Vector3(-45, 2, -200), Vector3(1, 2, 10), 0, 0, Vector4(0.1, 0.1, 0.1, 1));
+}
+
+void TutorialGame::SpawnApples(int amount, float dt){
+	if (world->GetEnableAppleThrower() || world->GetApplesToBeSpawned()>0) {
+		if (dt * 1000.0f > 7) {
+			if (repetitions % 5 == 0) {
+				int random = rand() % 5000 + 1000;
+				GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
+				Sleep(50);
+				appleInstance->GetPhysicsObject()->AddForce(Vector3(random * 3.0f, random * 1.3f, random * (repetitions / 13.f)));
+				++applesSpawned;
+				if (world->GetApplesToBeSpawned() > 0) {
+					world->SetApplesToBeSpawned(world->GetApplesToBeSpawned() - 1);
+				}
+			}
+			++repetitions;
+			if (repetitions > amount * 5) {
+				world->SetEnableAppleThrower(false);
+				repetitions = 0;
+			}
+		}
+	}
+}
+
+void TutorialGame::ReSpawnApples(int amount) {
+	
+	for (int i = 0; i < amount; ++i) {		
+		int random = rand() % 1000 + 500;
+		GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
+		Sleep(50);
+		appleInstance->GetPhysicsObject()->AddForce(Vector3(random, 300, random));
+		++applesSpawned;		
+	}
+	world->SetApplesToBeSpawned(0);
 }
 
 GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass, Vector4 colour, bool isAppleThrower) {
@@ -607,7 +634,7 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 
 	goose->GetPhysicsObject()->SetInverseMass(inverseMass);
 	goose->GetPhysicsObject()->InitSphereInertia(false);
-	goose->GetPhysicsObject()->SetStiffness(500.f);
+	goose->GetPhysicsObject()->SetStiffness(300.f);
 	goose->GetPhysicsObject()->SetHandleLikeImpulse(true);
 	goose->GetPhysicsObject()->SetHandleLikeSpring(true);
 	world->AddGameObject(goose);

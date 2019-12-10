@@ -28,7 +28,8 @@ void PhysicsSystem::SetGravity(const Vector3& g) {
 }
 
 void PhysicsSystem::CollectObject(GameObject* collectable) {	
-	collectedObjects.push_back(collectable);
+	++gameWorld.collectedObjects;
+	gameWorld.carryingObjects.push_back(collectable);
 	collectable->SetAsCollected(true);
 }
 
@@ -344,28 +345,29 @@ void PhysicsSystem::NarrowPhase() {
 				else if (info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::OBJECT) {
 					CollectObject(info.a);
 				}
-				
-				if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::NEST || 
-					info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::NEST) {
-					playerIsInNest = true;
-					if (collectedObjects.size() > 0) {
-						int score = 0;
-						for (int i = 0; i < collectedObjects.size(); ++i) {
-							if (collectedObjects[i]->GetName() == "apple") {
-								++score;
+				if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::ENEMY ||
+					info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::ENEMY) {
+					int numberOfCarryingObjects = gameWorld.carryingObjects.size();
+					int applesToBeSpawned = 0;
+					int bonusItemsToBeSpawned = 0;
+					if (numberOfCarryingObjects > 0) {						
+						for (int i = 0; i < numberOfCarryingObjects; ++i) {
+							if (gameWorld.carryingObjects[i]->GetName() == "apple") {
+								++applesToBeSpawned;
 							}
 							else {
-								score += 5;
+								++bonusItemsToBeSpawned;
 							}
 						}
-						gameWorld.SetScore(score);
+						gameWorld.SetBonusItemsToBeSpawned(bonusItemsToBeSpawned);
+						gameWorld.SetApplesToBeSpawned(applesToBeSpawned);		
+						gameWorld.carryingObjects.clear();
+						gameWorld.collectedObjects -= applesToBeSpawned;
 					}
 				}
-				else {
-					playerIsInNest = false;
-				}
+				
 				info.framesLeft = numCollisionFrames;
-				//ImpulseResolveCollision(*info.a, *info.b, info.point);
+
 				if ((info.a->GetPhysicsObject()->GetHandleLikeSpring() || info.b->GetPhysicsObject()->GetHandleLikeSpring()) && (
 					(info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() != LayerType::FLOOR) ||
 					(info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() != LayerType::FLOOR)
