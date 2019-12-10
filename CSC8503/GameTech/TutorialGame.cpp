@@ -193,43 +193,48 @@ void TutorialGame::LockedObjectMovement() {
 	Vector3 fwdAxis = Vector3::Cross(Vector3(0, 1, 0), rightAxis);
 	Vector3 vertAxis = Vector3::Cross(fwdAxis, rightAxis);
 
-	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {		
-		/*if(lockedObject->GetTransform().GetWorldOrientation().y < 0.5f && lockedObject->GetTransform().GetWorldOrientation().y > -0.5f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));
-		else if (lockedObject->GetTransform().GetWorldOrientation().y > 0.5f || lockedObject->GetTransform().GetWorldOrientation().y < -0.5f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));*/
+	float rotationSpeed = 60.0f;
+	Vector3 pyr = lockedObject->GetConstTransform().GetLocalOrientation().ToEuler();
+
+	pyr.y = pyr.y >= 0.0f ? (pyr.y <= 360.0f ? pyr.y : pyr.y - 360.0f) : pyr.y + 360.0f;
+	
+	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {
+		pyr.y += pyr.y <= 270.0f 
+			? (pyr.y > 90.0f 
+				? -rotationSpeed * 0.1f
+				: rotationSpeed * 0.1f)
+			: rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(-rightAxis);
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
-		/*if (lockedObject->GetTransform().GetWorldOrientation().y > -0.5f && lockedObject->GetTransform().GetWorldOrientation().y < 0.5f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
-		else if (lockedObject->GetTransform().GetWorldOrientation().y < -0.5f || lockedObject->GetTransform().GetWorldOrientation().y > 0.5f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));*/
+		pyr.y += pyr.y >= 90.0f
+			? (pyr.y < 270.0f
+				? rotationSpeed * 0.1f
+				: -rotationSpeed * 0.1f)
+			: -rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(rightAxis);
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP)) {
-		if (lockedObject->GetTransform().GetWorldOrientation().y < 0.01f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));
-		if (lockedObject->GetTransform().GetWorldOrientation().y > 0.01f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
+		pyr.y += pyr.y >= 0.0f
+			? (pyr.y < 180.0f
+				? -rotationSpeed * 0.1f
+				: rotationSpeed * 0.1f)
+			: rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(fwdAxis);
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::DOWN)) {
-		if (lockedObject->GetTransform().GetWorldOrientation().y > 0.01f && lockedObject->GetTransform().GetWorldOrientation().y < 0.9f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));
-		else if (lockedObject->GetTransform().GetWorldOrientation().y < 0.01f && lockedObject->GetTransform().GetWorldOrientation().y > -0.9f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
-
-		/*else if (lockedObject->GetTransform().GetWorldOrientation().y < 0.0f && lockedObject->GetTransform().GetWorldOrientation().y > -0.99f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, -7.f, 0));
-		else if (lockedObject->GetTransform().GetWorldOrientation().y < -0.99f)
-			lockedObject->GetPhysicsObject()->AddTorque(Vector3(0, 7.f, 0));*/
+		pyr.y += pyr.y >= 0.0f
+			? (pyr.y < 180.0f
+				? rotationSpeed * 0.1f
+				: -rotationSpeed * 0.1f)
+			: -rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(-fwdAxis);
 	}
 
+	lockedObject->GetTransform().SetLocalOrientation(Quaternion::EulerAnglesToQuaternion(pyr.x, pyr.y, pyr.z));
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::SPACE)) {
 		lockedObject->GetPhysicsObject()->AddForce(Vector3(0,200,0));
 	}
@@ -436,7 +441,7 @@ void TutorialGame::InitWorld() {
 
 	OGLTexture* waterTex = (OGLTexture*)TextureLoader::LoadAPITexture("water.tga");
 	AddFloorToWorld(Vector3(0, -2, -90), Vector3(30, 2, 60), waterTex, LayerType::WATER, "lake", true); //lake
-	AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
+	//AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
 
 
 	OGLTexture* islangTex = (OGLTexture*)TextureLoader::LoadAPITexture("island.jpg");
