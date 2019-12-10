@@ -1,6 +1,14 @@
 #pragma once
 #include "GameTechRenderer.h"
 #include "../CSC8503Common/PhysicsSystem.h"
+#include "../CSC8503Common/GameWorld.h"
+#include "../../Plugins/OpenGLRendering/OGLMesh.h"
+#include "../../Plugins/OpenGLRendering/OGLShader.h"
+#include "../../Plugins/OpenGLRendering/OGLTexture.h"
+#include "../../Common/TextureLoader.h"
+
+#include "../CSC8503Common/PositionConstraint.h"
+#include "../CSC8503Common/NavigationGrid.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -35,6 +43,9 @@ namespace NCL {
 			void DebugObjectMovement();
 			void LockedObjectMovement();
 			void LockedCameraMovement();
+			void AgentPathfinding();
+
+			void DisplayPathfinding();
 
 			GameObject* AddFloorToWorld(
 				const Vector3& position, 
@@ -99,6 +110,7 @@ namespace NCL {
 			Vector3 gooseInitPos;
 			Vector3 appleThrowerPos;
 			int applesRespawned = 0;
+			vector<Vector3> reachableNodes;
 		};
 	}
 }

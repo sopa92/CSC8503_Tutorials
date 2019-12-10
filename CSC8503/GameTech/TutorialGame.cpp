@@ -4,13 +4,6 @@ http://soundbible.com/1187-Goose.html
 */
 
 #include "TutorialGame.h"
-#include "../CSC8503Common/GameWorld.h"
-#include "../../Plugins/OpenGLRendering/OGLMesh.h"
-#include "../../Plugins/OpenGLRendering/OGLShader.h"
-#include "../../Plugins/OpenGLRendering/OGLTexture.h"
-#include "../../Common/TextureLoader.h"
-
-#include "../CSC8503Common/PositionConstraint.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -73,6 +66,8 @@ TutorialGame::~TutorialGame()	{
 
 void TutorialGame::UpdateGame(float dt) {
 
+	AgentPathfinding();
+	DisplayPathfinding();
 	if (!inSelectionMode) {
 		world->GetMainCamera()->UpdateCamera(dt);
 	}
@@ -111,7 +106,7 @@ void TutorialGame::UpdateGame(float dt) {
 	}
 
 	CollisionDetection::CollisionInfo info;
-	if (CollisionDetection::ObjectIntersection(world->GetPlayer(), world->GetNest(), info)) {
+	if (CollisionDetection::ObjectIntersection(world->GetWorldItemOfType(LayerType::PLAYER), world->GetWorldItemOfType(LayerType::NEST), info)) {
 
 		int itemsToPutInBasket = world->carryingObjects.size();
 		if (itemsToPutInBasket > 0) {
@@ -194,13 +189,17 @@ void TutorialGame::LockedObjectMovement() {
 	Vector3 vertAxis = Vector3::Cross(fwdAxis, rightAxis);
 
 	float rotationSpeed = 60.0f;
-	Vector3 pyr = lockedObject->GetConstTransform().GetLocalOrientation().ToEuler();
+	Vector3 objectOrientation = lockedObject->GetConstTransform().GetLocalOrientation().ToEuler();
 
-	pyr.y = pyr.y >= 0.0f ? (pyr.y <= 360.0f ? pyr.y : pyr.y - 360.0f) : pyr.y + 360.0f;
+	objectOrientation.y = objectOrientation.y >= 0.0f 
+		? (objectOrientation.y <= 360.0f 
+			? objectOrientation.y 
+			: objectOrientation.y - 360.0f) 
+		: objectOrientation.y + 360.0f;
 	
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {
-		pyr.y += pyr.y <= 270.0f 
-			? (pyr.y > 90.0f 
+		objectOrientation.y += objectOrientation.y <= 270.0f
+			? (objectOrientation.y > 90.0f
 				? -rotationSpeed * 0.1f
 				: rotationSpeed * 0.1f)
 			: rotationSpeed * 0.1f;
@@ -208,8 +207,8 @@ void TutorialGame::LockedObjectMovement() {
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
-		pyr.y += pyr.y >= 90.0f
-			? (pyr.y < 270.0f
+		objectOrientation.y += objectOrientation.y >= 90.0f
+			? (objectOrientation.y < 270.0f
 				? rotationSpeed * 0.1f
 				: -rotationSpeed * 0.1f)
 			: -rotationSpeed * 0.1f;
@@ -217,8 +216,8 @@ void TutorialGame::LockedObjectMovement() {
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP)) {
-		pyr.y += pyr.y >= 0.0f
-			? (pyr.y < 180.0f
+		objectOrientation.y += objectOrientation.y >= 0.0f
+			? (objectOrientation.y < 180.0f
 				? -rotationSpeed * 0.1f
 				: rotationSpeed * 0.1f)
 			: rotationSpeed * 0.1f;
@@ -226,15 +225,15 @@ void TutorialGame::LockedObjectMovement() {
 	}
 
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::DOWN)) {
-		pyr.y += pyr.y >= 0.0f
-			? (pyr.y < 180.0f
+		objectOrientation.y += objectOrientation.y >= 0.0f
+			? (objectOrientation.y < 180.0f
 				? rotationSpeed * 0.1f
 				: -rotationSpeed * 0.1f)
 			: -rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(-fwdAxis);
 	}
 
-	lockedObject->GetTransform().SetLocalOrientation(Quaternion::EulerAnglesToQuaternion(pyr.x, pyr.y, pyr.z));
+	lockedObject->GetTransform().SetLocalOrientation(Quaternion::EulerAnglesToQuaternion(objectOrientation.x, objectOrientation.y, objectOrientation.z));
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::SPACE)) {
 		lockedObject->GetPhysicsObject()->AddForce(Vector3(0,200,0));
 	}
@@ -421,7 +420,7 @@ void TutorialGame::InitCamera() {
 	world->GetMainCamera()->SetYaw(0.0f);
 	//world->GetMainCamera()->SetPosition(Vector3(-60, 40, 60));
 	//world->GetMainCamera()->SetPosition(gooseInitPos + Vector3(0,15,30));
-	lockedObject = world->GetPlayer();
+	lockedObject = world->GetWorldItemOfType(LayerType::PLAYER);
 }
 
 void TutorialGame::InitWorld() {
@@ -435,7 +434,7 @@ void TutorialGame::InitWorld() {
 	CreateBox();
 
 	AddParkKeeperToWorld(Vector3(40, 2, 0));
-	AddCharacterToWorld(Vector3(45, 2, 0));
+	AddCharacterToWorld(Vector3(45, 2, -10));
 
 	AddFloorToWorld(Vector3(0, -2, 0), Vector3(60,2,30));		// first piece of floor
 
@@ -584,7 +583,7 @@ void TutorialGame::ReSpawnApples(int amount) {
 		int random = rand() % 1000 + 500;
 		GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
 		Sleep(50);
-		appleInstance->GetPhysicsObject()->AddForce(Vector3(random, 300, random));
+		appleInstance->GetPhysicsObject()->AddForce(Vector3(random, 300.0f, random));
 		++applesSpawned;		
 	}
 	world->SetApplesToBeSpawned(0);
@@ -828,3 +827,28 @@ void TutorialGame::SimpleGJKTest() {
 
 }
 
+//---------start of PATHFINDING------------
+void TutorialGame::AgentPathfinding() {
+
+	NavigationGrid grid("GridMap.txt");
+
+	NavigationPath outPath;
+	Vector3 startPos = world->GetWorldItemOfType(LayerType::ENEMY)->GetTransform().GetWorldPosition();
+	Vector3 endPos = world->GetWorldItemOfType(LayerType::PLAYER)->GetTransform().GetWorldPosition();
+
+	bool found = grid.FindPath(startPos, endPos, outPath);
+	Vector3 pos;
+	while (outPath.PopWaypoint(pos)) {
+		reachableNodes.push_back(pos);
+	}
+}
+
+void TutorialGame::DisplayPathfinding() {
+	for (int i = 1; i < reachableNodes.size(); ++i) {
+		Vector3 a = reachableNodes[i - 1];
+		Vector3 b = reachableNodes[i];
+
+		Debug::DrawLine(a + Vector3(0, 10, 0), b + Vector3(0, 10, 0), Vector4(1, 0, 0, 1));
+	}
+}
+//----------end of PATHFINDING-------------

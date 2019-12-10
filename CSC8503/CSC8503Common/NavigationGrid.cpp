@@ -18,6 +18,10 @@ NavigationGrid::NavigationGrid()	{
 	nodeSize	= 0;
 	gridWidth	= 0;
 	gridHeight	= 0;
+	/*offsetX = 12;
+	offsetZ = 6;*/
+	offsetX = 6;
+	offsetZ = 3;
 	allNodes	= nullptr;
 }
 
@@ -32,20 +36,20 @@ NavigationGrid::NavigationGrid(const std::string&filename) : NavigationGrid() {
 
 	for (int y = 0; y < gridHeight; ++y) {
 		for (int x = 0; x < gridWidth; ++x) {
+			int newX = x - offsetX;
+			int newY = (y - offsetZ);
 			GridNode&n = allNodes[(gridWidth * y) + x];
 			char type = 0;
 			infile >> type;
-			n.type = type;
-			//n.position = Vector3((float)(x * gridWidth), 0, (float)(y * gridHeight));
-			n.position = Vector3((float)(x * nodeSize), 0, (float)(y * nodeSize));
+			n.type = type;			
+			n.position = Vector3((float)(newX * nodeSize), 0, (float)(newY * nodeSize));
 		}
 	}
 	
 	//now to build the connectivity between the nodes
 	for (int y = 0; y < gridHeight; ++y) {
 		for (int x = 0; x < gridWidth; ++x) {
-			GridNode&n = allNodes[(gridWidth * y) + x];		
-
+			GridNode&n = allNodes[(gridWidth * y) + x];
 			if (y > 0) { //get the above node
 				n.connected[0] = &allNodes[(gridWidth * (y - 1)) + x];
 			}
@@ -101,11 +105,17 @@ float NavigationGrid::Heuristic(GridNode* hNode, GridNode* endNode) const {
 
 bool NavigationGrid::FindPath(const Vector3& from, const Vector3& to, NavigationPath& outPath) {
 	// need to work out which node ’from ’ sits in , and ’to ’ sits in
-	int fromX = (from.x / nodeSize);
-	int fromZ = (from.z / nodeSize);
+	int fromX = (from.x / nodeSize) + offsetX;
+	int fromZ = (from.z / nodeSize) + offsetZ;
+		//from.z > 0 
+		//? ((from.z + offsetZ) / nodeSize) 
+		//: (((from.z * -1 )+ offsetZ) / nodeSize); //
 
-	int toX = (to.x / nodeSize);
-	int toZ = (to.z / nodeSize);
+	int toX = (to.x / nodeSize) + offsetX;
+	int toZ = (to.z / nodeSize) + offsetZ;
+		//to.z > 0
+		//? ((to.z + offsetZ) / nodeSize)
+		//: (((to.z * -1) + offsetZ)  / nodeSize);// 
 
 	if (fromX <0 || fromX > gridWidth - 1 || fromZ <0 || fromZ >gridHeight - 1) {
 		return false; //outside of map region!

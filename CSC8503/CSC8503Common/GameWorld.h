@@ -53,26 +53,17 @@ namespace NCL {
 				std::vector<Constraint*>::const_iterator& first,
 				std::vector<Constraint*>::const_iterator& last) const;
 
-			GameObject* GetPlayer() {
+			GameObject* GetWorldItemOfType(LayerType type) {
 				GameObjectIterator itr;
 				for (itr = gameObjects.begin(); itr < gameObjects.end(); ++itr)
 				{
-					if ((*itr)->GetLayer() == LayerType::PLAYER) {
+					if ((*itr)->GetLayer() == type) {
 						return (*itr);
 					}
 				}
 				return nullptr;
 			}
-			GameObject* GetNest() {
-				GameObjectIterator itr;
-				for (itr = gameObjects.begin(); itr < gameObjects.end(); ++itr)
-				{
-					if ((*itr)->GetLayer() == LayerType::NEST) {
-						return (*itr);
-					}
-				}
-				return nullptr;
-			}
+			
 			int GetScore() { return score; }
 			void SetScore(int scr) { score = scr; }
 			int collectedObjects;
