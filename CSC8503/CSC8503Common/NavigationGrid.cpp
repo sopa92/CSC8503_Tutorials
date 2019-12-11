@@ -18,10 +18,8 @@ NavigationGrid::NavigationGrid()	{
 	nodeSize	= 0;
 	gridWidth	= 0;
 	gridHeight	= 0;
-	/*offsetX = 12;
-	offsetZ = 6;*/
-	offsetX = 6;
-	offsetZ = 3;
+	offsetX = 12;
+	offsetZ = 42;
 	allNodes	= nullptr;
 }
 
@@ -107,15 +105,9 @@ bool NavigationGrid::FindPath(const Vector3& from, const Vector3& to, Navigation
 	// need to work out which node ’from ’ sits in , and ’to ’ sits in
 	int fromX = (from.x / nodeSize) + offsetX;
 	int fromZ = (from.z / nodeSize) + offsetZ;
-		//from.z > 0 
-		//? ((from.z + offsetZ) / nodeSize) 
-		//: (((from.z * -1 )+ offsetZ) / nodeSize); //
 
 	int toX = (to.x / nodeSize) + offsetX;
 	int toZ = (to.z / nodeSize) + offsetZ;
-		//to.z > 0
-		//? ((to.z + offsetZ) / nodeSize)
-		//: (((to.z * -1) + offsetZ)  / nodeSize);// 
 
 	if (fromX <0 || fromX > gridWidth - 1 || fromZ <0 || fromZ >gridHeight - 1) {
 		return false; //outside of map region!

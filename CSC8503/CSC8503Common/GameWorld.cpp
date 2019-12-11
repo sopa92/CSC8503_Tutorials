@@ -85,6 +85,15 @@ void GameWorld::UpdateQuadTree() {
 	//}
 }
 
+void GameWorld::DrawBoundingVolumes() const
+{
+	for (auto& i : gameObjects)
+	{
+		i->DrawDebugVolume();
+	}
+}
+
+
 bool GameWorld::Raycast(Ray& r, RayCollision& closestCollision, bool closestObject) const {
 	//The simplest raycast just goes through each object and sees if there's a collision
 	RayCollision collision;

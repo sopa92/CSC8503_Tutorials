@@ -182,19 +182,9 @@ void PhysicsSystem::BasicCollisionDetection() {
 				PhysicsObject* physA = info.a->GetPhysicsObject();
 				PhysicsObject* physB = info.b->GetPhysicsObject();
 
-				/*if (physA->GetHandleLikeImpulse() && physB->GetHandleLikeImpulse())
-				{*/
-					ImpulseResolveCollision(*info.a, *info.b, info.point);
-				/*}
-				else;*/ 
-					if ((physA->GetHandleLikeSpring() || physB->GetHandleLikeSpring()) && (
-						(info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() != LayerType::FLOOR) || 
-						(info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() != LayerType::FLOOR)
-						))
-						ResolveSpringCollision(*info.a, *info.b, info.point);
-					if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::OBJECT) {
-						CollectObject(info.b);
-					}
+				
+				ImpulseResolveCollision(*info.a, *info.b, info.point);
+				
 				info.framesLeft = numCollisionFrames;
 				allCollisions.insert(info);	// we insert the successfully detected collision into an STL::List,	which will let us keep track of objects that are colliding
 			}
@@ -357,18 +347,23 @@ void PhysicsSystem::NarrowPhase() {
 							}
 							else {
 								++bonusItemsToBeSpawned;
+								gameWorld.respawningPositions.push_back(gameWorld.carryingObjects[i]->GetTransform().GetWorldPosition());
 							}
 						}
 						gameWorld.SetBonusItemsToBeSpawned(bonusItemsToBeSpawned);
 						gameWorld.SetApplesToBeSpawned(applesToBeSpawned);		
 						gameWorld.carryingObjects.clear();
-						gameWorld.collectedObjects -= applesToBeSpawned;
+						gameWorld.collectedObjects -= applesToBeSpawned + bonusItemsToBeSpawned;
 					}
 				}
 				
 				info.framesLeft = numCollisionFrames;
-
-				if ((info.a->GetPhysicsObject()->GetHandleLikeSpring() || info.b->GetPhysicsObject()->GetHandleLikeSpring()) && (
+				/*if (info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() == LayerType::ENEMY ||
+					info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() == LayerType::ENEMY) {
+					ImpulseResolveCollision(*info.a, *info.b, info.point);
+				}
+				else */
+					if ((info.a->GetPhysicsObject()->GetHandleLikeSpring() || info.b->GetPhysicsObject()->GetHandleLikeSpring()) && (
 					(info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() != LayerType::FLOOR) ||
 					(info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() != LayerType::FLOOR)
 					))

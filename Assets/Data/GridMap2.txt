@@ -2,9 +2,9 @@
 13
 25
 xxxxxxxxxxxxx
-x...........x
-x...........x
-x...........x
+x.x.........x
+x.x.........x
+x.xxxxxxxxxxx
 x...........x
 x...........x
 x..xxxxxxx..x
@@ -22,7 +22,7 @@ x..xxxxxxx..x
 x..xxxxxxx..x
 x...........x
 x...........x
-x.xxxxxxxxxxx
-x.x.........x
-x.x.........x
+x...........x
+x...........x
+x...........x
 xxxxxxxxxxxxx

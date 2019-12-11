@@ -9,6 +9,9 @@
 
 #include "../CSC8503Common/PositionConstraint.h"
 #include "../CSC8503Common/NavigationGrid.h"
+#include "../CSC8503Common/StateMachine.h"
+#include "../CSC8503Common/State.h"
+#include "../CSC8503Common/StateTransition.h"
 
 namespace NCL {
 	namespace CSC8503 {
@@ -18,6 +21,8 @@ namespace NCL {
 			~TutorialGame();
 
 			virtual void UpdateGame(float dt);
+			void PutItemsInNest(int& score);
+
 		protected:
 			void InitialiseAssets();
 
@@ -26,13 +31,15 @@ namespace NCL {
 
 			void InitWorld();
 
+			void AddBonusItems();
+			void AddWalls();
+
 			/*
 			These are some of the world/object creation functions I created when testing the functionality
 			in the module. Feel free to mess around with them to see different objects being created in different
 			test scenarios (constraints, collision types, and so on). 
 			*/
 			void InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius, const Vector3& positionTranslation);
-			void InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing);
 			void Spa_InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing);
 			void InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims, const Vector3& positionTranslation);
 			void BridgeConstraintTest();
@@ -43,7 +50,7 @@ namespace NCL {
 			void DebugObjectMovement();
 			void LockedObjectMovement();
 			void LockedCameraMovement();
-			void AgentPathfinding();
+			void AgentPathfinding(Vector3 startPos, Vector3 endPos);
 
 			void DisplayPathfinding();
 
@@ -56,7 +63,7 @@ namespace NCL {
 				bool resolveAsSprings = false
 			);
 			//GameObject* AddPoolToWorld(const Vector3& position);
-			GameObject* AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float elasticity, float inverseMass = 10.0f);
+			GameObject* AddSphereToWorld(const Vector3& position, float radius, float elasticity, float inverseMass = 10.0f, LayerType layer = LayerType::SPHERE, string name= "Sphere");
 			GameObject* AddCubeToWorld(
 				const Vector3& position, 
 				Vector3 dimensions, 
@@ -104,13 +111,16 @@ namespace NCL {
 				lockedObject = o;
 			}
 			void SpawnApples(int amount, float dt);
-			void ReSpawnApples(int amount);
-			int applesSpawned;
+			void ReSpawnItems(int amount, bool isApple);
+			int itemsSpawned;
 			int repetitions;
 			Vector3 gooseInitPos;
+			Vector3 agentInitPos;
 			Vector3 appleThrowerPos;
-			int applesRespawned = 0;
+			//int applesRespawned = 0;
 			vector<Vector3> reachableNodes;
+			bool displayBoundingVolumes;
+			Vector3 targetWaypoint;
 		};
 	}
 }

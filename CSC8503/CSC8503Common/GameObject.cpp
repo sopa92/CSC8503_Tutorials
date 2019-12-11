@@ -46,3 +46,23 @@ void GameObject::UpdateBroadphaseAABB() {
 		broadphaseAABB = mat * halfSizes;
 	}
 }
+
+void GameObject::DrawDebug(const Vector4& color)
+{
+	renderObject->SetColour(color);
+}
+
+void GameObject::DrawDebugVolume()
+{
+	if (!boundingVolume)
+		return;
+
+	if (boundingVolume->type == VolumeType::AABB)
+	{
+		boundingVolume->DrawDebug(transform.GetWorldPosition(), Vector4(1, 0, 0, 1));
+	}
+	else if (boundingVolume->type == VolumeType::Sphere)
+	{
+		boundingVolume->DrawDebug(transform.GetWorldPosition(), Vector4(0, 1, 0, 1));
+	}	
+}

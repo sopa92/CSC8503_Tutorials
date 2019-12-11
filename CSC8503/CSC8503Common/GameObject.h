@@ -81,6 +81,10 @@ namespace NCL {
 
 			void UpdateBroadphaseAABB();
 
+			void DrawDebug(const Vector4& color);
+
+			void DrawDebugVolume();
+
 
 			LayerType GetLayer() { return layer; }
 			void SetLayer(LayerType type) { layer = type; }
