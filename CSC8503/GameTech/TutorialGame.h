@@ -12,8 +12,10 @@
 #include "../CSC8503Common/StateMachine.h"
 #include "../CSC8503Common/State.h"
 #include "../CSC8503Common/StateTransition.h"
+#include "../CSC8503Common/AIAgent.h"
 
 namespace NCL {
+	
 	namespace CSC8503 {
 		class TutorialGame		{
 		public:
@@ -30,6 +32,10 @@ namespace NCL {
 			void UpdateKeys();
 
 			void InitWorld();
+
+			void AddGroundAndLake();
+
+			void CreateLimitsForAI();
 
 			void AddBonusItems();
 			void AddWalls();
@@ -50,10 +56,7 @@ namespace NCL {
 			void DebugObjectMovement();
 			void LockedObjectMovement();
 			void LockedCameraMovement();
-			void AgentPathfinding(Vector3 startPos, Vector3 endPos);
-
-			void DisplayPathfinding();
-
+			
 			GameObject* AddFloorToWorld(
 				const Vector3& position, 
 				Vector3 floorSize = Vector3(60, 2, 60), 
@@ -73,12 +76,12 @@ namespace NCL {
 				bool isAppleThrower=false);
 			//IT'S HAPPENING
 			GameObject* AddGooseToWorld(const Vector3& position);
-			GameObject* AddParkKeeperToWorld(const Vector3& position);
+			AIAgent* AddParkKeeperToWorld(const Vector3& position);
 			GameObject* AddCharacterToWorld(const Vector3& position);
 			GameObject* AddAppleToWorld(const Vector3& position);
 
-			void CreateBox();
-			void CreateFences();
+			void AddBasket();
+			void AddFences();
 
 			GameTechRenderer*	renderer;
 			PhysicsSystem*		physics;
@@ -94,7 +97,9 @@ namespace NCL {
 
 			OGLMesh*	cubeMesh	= nullptr;
 			OGLMesh*	sphereMesh	= nullptr;
-			OGLTexture* basicTex	= nullptr;
+			OGLTexture* basicTex	= nullptr; 
+			OGLTexture* wallTex		= nullptr;
+			OGLTexture* waterTex	= nullptr;
 			OGLShader*	basicShader = nullptr;
 
 			//Coursework Meshes
@@ -106,7 +111,7 @@ namespace NCL {
 
 			//Coursework Additional functionality	
 			GameObject* lockedObject	= nullptr;
-			Vector3 lockedOffset		= Vector3(0, 14, 20);
+			Vector3 lockedOffset		= Vector3(0, 14, 25);
 			void LockCameraToObject(GameObject* o) {
 				lockedObject = o;
 			}
@@ -117,10 +122,10 @@ namespace NCL {
 			Vector3 gooseInitPos;
 			Vector3 agentInitPos;
 			Vector3 appleThrowerPos;
-			//int applesRespawned = 0;
-			vector<Vector3> reachableNodes;
 			bool displayBoundingVolumes;
-			Vector3 targetWaypoint;
+			AIAgent* parkKeeper;
+			GameObject* player;
+			//Vector3 targetWaypoint;
 		};
 	}
 }

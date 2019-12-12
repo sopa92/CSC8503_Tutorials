@@ -66,14 +66,6 @@ namespace NCL {
 			
 			int GetScore() { return score; }
 			void SetScore(int scr) { score = scr; }
-			int collectedObjects;
-			std::vector<GameObject*> carryingObjects;
-			vector<Vector3> respawningPositions;
-			void SetApplesToBeSpawned(int number){ applesToBeSpawned = number;}
-			int GetApplesToBeSpawned() { return applesToBeSpawned; }
-
-			void SetBonusItemsToBeSpawned(int number) { bonusItemsToBeSpawned = number; }
-			int GetBonusItemsToBeSpawned() { return bonusItemsToBeSpawned; }
 			
 			void SetEnableAppleThrower(bool status) { enableAppleThrower = status; }
 			bool GetEnableAppleThrower() { return enableAppleThrower; }
@@ -87,8 +79,6 @@ namespace NCL {
 			std::vector<Constraint*> constraints;
 
 			QuadTree<GameObject*>* quadTree;
-			int applesToBeSpawned = 0;
-			int bonusItemsToBeSpawned = 0;
 			bool enableAppleThrower = false;
 			Camera* mainCamera;
 			int score;

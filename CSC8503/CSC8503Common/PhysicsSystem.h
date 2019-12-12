@@ -23,7 +23,6 @@ namespace NCL {
 
 			void SetGravity(const Vector3& g);
 
-			void CollectObject(GameObject* collectable);
 		protected:
 			void BasicCollisionDetection();
 			void BroadPhase();
@@ -49,6 +48,7 @@ namespace NCL {
 			float	dTOffset;
 			float	globalDamping;
 			float	frameDT;
+			int constraintIterationCount = 10;
 
 			std::set<CollisionDetection::CollisionInfo> allCollisions;
 			std::set<CollisionDetection::CollisionInfo>		broadphaseCollisions;

@@ -140,6 +140,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameState.cpp" />
+    <ClCompile Include="GameStateHandler.cpp" />
     <ClCompile Include="GameTechRenderer.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="NetworkedGame.cpp" />
@@ -147,6 +149,8 @@
     <ClCompile Include="TutorialGame.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GameState.h" />
+    <ClInclude Include="GameStateHandler.h" />
     <ClInclude Include="GameTechRenderer.h" />
     <ClInclude Include="NetworkedGame.h" />
     <ClInclude Include="NetworkPlayer.h" />

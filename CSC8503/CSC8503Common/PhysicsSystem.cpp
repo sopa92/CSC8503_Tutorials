@@ -27,12 +27,6 @@ void PhysicsSystem::SetGravity(const Vector3& g) {
 	gravity = g;
 }
 
-void PhysicsSystem::CollectObject(GameObject* collectable) {	
-	++gameWorld.collectedObjects;
-	gameWorld.carryingObjects.push_back(collectable);
-	collectable->SetAsCollected(true);
-}
-
 /*
 
 If the 'game' is ever reset, the PhysicsSystem must be
@@ -53,39 +47,41 @@ This is the core of the physics engine update
 
 */
 void PhysicsSystem::Update(float dt) {
-	GameTimer testTimer;
-	testTimer.GetTimeDeltaSeconds();
-
-	frameDT = dt;
+	if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::I)) {
+		constraintIterationCount--;
+		std::cout << "Setting constraint iterations to " << constraintIterationCount << std::endl;
+	}
+	if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::O)) {
+		constraintIterationCount++;
+		std::cout << "Setting constraint iterations to " << constraintIterationCount << std::endl;
+	}
 
 	dTOffset += dt; //We accumulate time delta here - there might be remainders from previous frame!
 
-	float iterationDt = 1.0f / 120.0f; //Ideally we'll have 120 physics updates a second 
+	float idealFrameRate = 60;							//this is the framerate we'd like to maintain kplzthx
+	float idealIterations = idealFrameRate * 2;			//we want n per second;
 
-	//if (dTOffset > 8 * iterationDt) { //the physics engine cant catch up!
-	//	iterationDt = 1.0f / 15.0f; //it'll just have to run bigger timesteps...
-	//	//std::cout << "Setting physics iterations to 15" << iterationDt << std::endl;
-	//}
-	//else if (dTOffset > 4  * iterationDt) { //the physics engine cant catch up!
-	//	iterationDt = 1.0f / 30.0f; //it'll just have to run bigger timesteps...
-	//	//std::cout << "Setting iteration dt to 4 case " << iterationDt << std::endl;
-	//}
-	//else if (dTOffset > 2* iterationDt) { //the physics engine cant catch up!
-	//	iterationDt = 1.0f / 60.0f; //it'll just have to run bigger timesteps...
-	//	//std::cout << "Setting iteration dt to 2 case " << iterationDt << std::endl;
-	//}
-	//else {
-	//	//std::cout << "Running normal update " << iterationDt << std::endl;
-	//}
+	int perFrameIts = (int)(idealIterations / idealFrameRate);
 
-	int constraintIterationCount = 10;
-	//iterationDt = dt;
+	float iterationDt = 1.0f / idealIterations;				//So each iteration we'll get an advance of this time
+	float currentFrameRate = 1.0f / dt;							//what's our current fps?
+
+	int realIterations = (int)(dTOffset / iterationDt);				//how many iterations of the desired dt can we actually fit in our timestep?
+
+	if (currentFrameRate < idealFrameRate * 0.5f) {
+		iterationDt = dTOffset; //run one big update if the framerate tanks
+	}
+	else if (realIterations > perFrameIts + 1) { //+1 as we sometimes accumulate an extra frame to take up the leftover time
+		//UH OH, we're accumulating too much time from somewhere, half the iteration count
+		//Probably caused by not being able to quite maintain the fps
+		iterationDt *= 2;
+	}
 
 	if (useBroadPhase) {
 		UpdateObjectAABBs();
 	}
-
-	while(dTOffset > iterationDt *0.5) {
+	int iteratorCount = 0;
+	while (dTOffset >= iterationDt) {
 		IntegrateAccel(iterationDt); //Update accelerations from external forces
 		if (useBroadPhase) {
 			BroadPhase();
@@ -98,22 +94,19 @@ void PhysicsSystem::Update(float dt) {
 		//This is our simple iterative solver - 
 		//we just run things multiple times, slowly moving things forward
 		//and then rechecking that the constraints have been met		
-		float constraintDt = iterationDt /  (float)constraintIterationCount;
-
+		float constraintDt = iterationDt / (float)constraintIterationCount;
 		for (int i = 0; i < constraintIterationCount; ++i) {
-			UpdateConstraints(constraintDt);	
+			UpdateConstraints(constraintDt);
 		}
-		
 		IntegrateVelocity(iterationDt); //update positions from new velocity changes
 
-		dTOffset -= iterationDt; 
+		dTOffset -= iterationDt;
+		iteratorCount++;
 	}
+
 	ClearForces();	//Once we've finished with the forces, reset them to zero
-	
+
 	UpdateCollisionList(); //Remove any old collisions
-	//std::cout << iteratorCount << " , " << iterationDt << std::endl;
-	float time = testTimer.GetTimeDeltaSeconds();
-	//std::cout << "Physics time taken: " << time << std::endl;
 }
 
 /*
@@ -330,40 +323,21 @@ void PhysicsSystem::NarrowPhase() {
 			if (info.a->IsActive() && info.b->IsActive()) {
 				
 				if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::OBJECT) {
-					CollectObject(info.b);
+					info.a->CollectObject(info.b);
 				}
 				else if (info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::OBJECT) {
-					CollectObject(info.a);
+					info.b->CollectObject(info.a);
 				}
-				if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::ENEMY ||
-					info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::ENEMY) {
-					int numberOfCarryingObjects = gameWorld.carryingObjects.size();
-					int applesToBeSpawned = 0;
-					int bonusItemsToBeSpawned = 0;
-					if (numberOfCarryingObjects > 0) {						
-						for (int i = 0; i < numberOfCarryingObjects; ++i) {
-							if (gameWorld.carryingObjects[i]->GetName() == "apple") {
-								++applesToBeSpawned;
-							}
-							else {
-								++bonusItemsToBeSpawned;
-								gameWorld.respawningPositions.push_back(gameWorld.carryingObjects[i]->GetTransform().GetWorldPosition());
-							}
-						}
-						gameWorld.SetBonusItemsToBeSpawned(bonusItemsToBeSpawned);
-						gameWorld.SetApplesToBeSpawned(applesToBeSpawned);		
-						gameWorld.carryingObjects.clear();
-						gameWorld.collectedObjects -= applesToBeSpawned + bonusItemsToBeSpawned;
-					}
+				if (info.a->GetLayer() == LayerType::PLAYER && info.b->GetLayer() == LayerType::ENEMY) {
+					info.a->DropCarryingItems();
 				}
-				
+				else if (info.b->GetLayer() == LayerType::PLAYER && info.a->GetLayer() == LayerType::ENEMY) {
+					info.b->DropCarryingItems();
+				}
+
 				info.framesLeft = numCollisionFrames;
-				/*if (info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() == LayerType::ENEMY ||
-					info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() == LayerType::ENEMY) {
-					ImpulseResolveCollision(*info.a, *info.b, info.point);
-				}
-				else */
-					if ((info.a->GetPhysicsObject()->GetHandleLikeSpring() || info.b->GetPhysicsObject()->GetHandleLikeSpring()) && (
+				
+				if ((info.a->GetPhysicsObject()->GetHandleLikeSpring() || info.b->GetPhysicsObject()->GetHandleLikeSpring()) && (
 					(info.a->GetLayer() == LayerType::WATER && info.b->GetLayer() != LayerType::FLOOR) ||
 					(info.b->GetLayer() == LayerType::WATER && info.a->GetLayer() != LayerType::FLOOR)
 					))
