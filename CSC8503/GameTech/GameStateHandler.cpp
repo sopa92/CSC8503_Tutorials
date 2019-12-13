@@ -118,5 +118,7 @@ void GameStateHandler::InitStateMachineStorage() {
 	MenuState* mainMenuState = new MenuState(0);
 	stateStorage.push_back(mainMenuState);
 	StartGameState* startGameState = new StartGameState(1);
+	if (startGameState->GetStateId() == 0)
+		startGameState->SetStateId(1);
 	stateStorage.push_back(startGameState);
 }

@@ -21,7 +21,7 @@ namespace NCL
 			virtual void OnSleep() {};
 
 			virtual int Update(float dt);
-
+			void SetStateId(int newId) { s_id = newId; }
 			int GetStateId() const { return s_id; }
 			std::string& GetName() { return s_Name; }
 		protected:

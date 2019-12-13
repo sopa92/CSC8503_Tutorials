@@ -33,7 +33,7 @@ namespace NCL
 
 			if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::RETURN))
 			{
-				if (chosenMenuOption == 2)
+				if (chosenMenuOption == 1)
 					return -2;
 				return (chosenMenuOption + 1);
 			}

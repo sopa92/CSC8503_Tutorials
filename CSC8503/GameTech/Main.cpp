@@ -19,57 +19,104 @@
 using namespace NCL;
 using namespace CSC8503;
 
-//---------start of NETWORKING------------
-class GooseGamePacketReceiver : public PacketReceiver {
-public:
-	GooseGamePacketReceiver(string name, TutorialGame* g) {
-		this->name = name;
-	}
-	void ReceivePacket(int type, GamePacket* payload, int source) {
-		if (type == String_Message) {
-			StringPacket* realPacket = (StringPacket*)payload;
 
-			string msg = realPacket->GetStringFromData();
-			if (msg == "HUGE") {
-				//make the goose huge				
+GameWorld* world;
+OGLRenderer* renderer;
+GameStateHandler* stateHandler;
+
+void GooseGameNetworking();
+void DisplayGrid();
+void ReturnToMenuAndRestart();
+
+int main() {
+	Vector2 screenDimensions = Vector2(1280, 720);
+	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", screenDimensions.x, screenDimensions.y);
+	float countdownInSec = 180;
+	if (!w->HasInitialised()) {
+		return -1;
+	}	
+	w->ShowOSPointer(false);
+	w->LockMouseToWindow(true);
+	
+	world = new GameWorld();
+	renderer = new GameTechRenderer(*world);
+	Debug::SetRenderer(renderer);
+	stateHandler = new GameStateHandler(renderer, 2);
+	stateHandler->Update(0);
+	stateHandler->Update(0);
+	
+
+	//while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyboardKeys::ESCAPE)) {
+	while (w->UpdateWindow() && !stateHandler->GetStateStack().empty()) {
+		
+		float dt = w->GetTimer()->GetTimeDeltaSeconds();
+		stateHandler->Update(dt);
+		if (dt > 1.0f) {
+			std::cout << "Skipping large time delta" << std::endl;
+			continue; //must have hit a breakpoint or something to have a 1 second frame time!
+		}
+		if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::PRIOR)) {
+			w->ShowConsole(true);
+		}
+		if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::NEXT)) {
+			w->ShowConsole(false);
+		}
+
+		if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::N)) {
+			GooseGameNetworking();
+		}
+		
+
+		if (!(stateHandler->currentState == 1 || stateHandler->currentState == 2))
+		{
+			Debug::FlushRenderables();
+			renderer->Update(dt);
+			renderer->Render();
+		}
+		//DisplayGrid();
+		
+		float gameDuration = w->GetTimer()->GetTotalTimeSeconds();
+		float timeLeft = countdownInSec - gameDuration;
+		if (timeLeft > 0) {
+			std::ostringstream out;
+			out.precision(0);
+			out << std::fixed << (timeLeft);
+			w->SetTitle("THE GOOSE GAME - Time Left (seconds): " + out.str());
+		}
+		else {
+			Debug::Print("Time's up... You lost :(", Vector2(screenDimensions.x / 4, screenDimensions.y / 2));
+
+			Debug::Print("Do you want to retry? (Y/N)", Vector2((screenDimensions.x / 4), (screenDimensions.y / 2 )-20));
+
+			if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::Y)) {
+
+				Debug::FlushRenderables();
+				ReturnToMenuAndRestart();
+				countdownInSec = 180 + countdownInSec;
 			}
-			std::cout << name << " received message: " << msg << std::endl;
+			else if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::N)) {
+				break;
+			}
+			//stateHandler->PopMenuStack();
 		}
 	}
-protected:
-	string name;
-};
+	
+	delete world;
+	delete renderer;
+	delete stateHandler;
+	Window::DestroyGameWindow();
+}
 
-void GooseGameNetworking(TutorialGame* g) {
-	NetworkBase::Initialise();
-
-	GooseGamePacketReceiver serverReceiver("Server", g);
-	GooseGamePacketReceiver clientReceiver("Client", g);
-
-	int port = NetworkBase::GetDefaultPort();
-
-	GameServer* server = new GameServer(port, 1);
-	GameClient* client = new GameClient();
-
-	server->RegisterPacketHandler(String_Message, &serverReceiver);
-	client->RegisterPacketHandler(String_Message, &clientReceiver);
-
-	bool canConnect = client->Connect(127, 0, 0, 1, port);
-
-	std::ifstream infile(Assets::DATADIR + "CheatCommand.txt");
-	string commandFromFile;
-	infile >> commandFromFile;
-
-	//if (commandFromFile == "HUGE") {}
-	for (int i = 0; i < 100; ++i) {
-		server->SendGlobalPacket(StringPacket(commandFromFile));
-		
-		server->UpdateServer();
-		client->UpdateClient();
-
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	}
-	NetworkBase::Destroy();
+void ReturnToMenuAndRestart() {
+	delete world;
+	delete renderer;
+	delete stateHandler;
+	world = new GameWorld();
+	renderer = new GameTechRenderer(*world);
+	Debug::SetRenderer(renderer);
+	stateHandler = new GameStateHandler(renderer, 2);
+	stateHandler->Update(0);
+	stateHandler->Update(0);
 }
 
 void DisplayGrid()
@@ -88,66 +135,59 @@ void DisplayGrid()
 	}
 }
 
-GameWorld* world;
-OGLRenderer* renderer;
-GameStateHandler* stateHandler;
-
-int main() {
-	Vector2 screenDimensions = Vector2(1280, 720);
-	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", screenDimensions.x, screenDimensions.y);
-	float countdownInMS = 180000;
-	if (!w->HasInitialised()) {
-		return -1;
-	}	
-	w->ShowOSPointer(false);
-	w->LockMouseToWindow(true);
-	
-	world = new GameWorld();
-	renderer = new GameTechRenderer(*world);
-	Debug::SetRenderer(renderer);
-	stateHandler = new GameStateHandler(renderer, 2);
-	stateHandler->Update(0);
-	stateHandler->Update(0);
-	
-	//GooseGameNetworking(g);
-
-	//while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyboardKeys::ESCAPE)) {
-	while (w->UpdateWindow() && !stateHandler->GetStateStack().empty()) {
-		
-		float dt = w->GetTimer()->GetTimeDeltaSeconds();
-
-		if (dt > 1.0f) {
-			std::cout << "Skipping large time delta" << std::endl;
-			continue; //must have hit a breakpoint or something to have a 1 second frame time!
-		}
-		if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::PRIOR)) {
-			w->ShowConsole(true);
-		}
-		if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::NEXT)) {
-			w->ShowConsole(false);
-		}
-
-		stateHandler->Update(dt);
-
-		//if (!(stateHandler->currentState == 1 || stateHandler->currentState == 2))
-		//{
-			Debug::FlushRenderables();
-			renderer->Update(dt);
-			renderer->Render();
-		//}
-		//DisplayGrid();
-
-		//w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
-
-		std::ostringstream out;
-		out.precision(0);
-		out << std::fixed << ((--countdownInMS));		
-		w->SetTitle("Gametech frame time:" + out.str());
-		
+class GooseGamePacketReceiver : public PacketReceiver {
+public:
+	GooseGamePacketReceiver(string name) {
+		this->name = name;
 	}
+	void ReceivePacket(int type, GamePacket* payload, int source) {
+		if (type == String_Message) {
+			StringPacket* realPacket = (StringPacket*)payload;
+
+			string msg = realPacket->GetStringFromData();
+			if (msg == "POWER") {
+				world->SetScore(world->GetScore() + 1000);
+
+				std::ofstream outfile(Assets::DATADIR + "CheatCommand.txt");
+				outfile.close();
+			}
+			std::cout << name << " received message: " << msg << std::endl;
+		}
+	}
+protected:
+	string name;
+};
+
+void GooseGameNetworking() {
+	NetworkBase::Initialise();
+
+	GooseGamePacketReceiver serverReceiver("Server");
+	GooseGamePacketReceiver clientReceiver("Client");
+
+	int port = NetworkBase::GetDefaultPort();
+
+	GameServer* server = new GameServer(port, 1);
+	GameClient* client = new GameClient();
+
+	server->RegisterPacketHandler(String_Message, &serverReceiver);
+	client->RegisterPacketHandler(String_Message, &clientReceiver);
+
+	bool canConnect = client->Connect(127, 0, 0, 1, port);
+
 	
-	delete world;
-	delete renderer;
-	delete stateHandler;
-	Window::DestroyGameWindow();
+
+	for (int i = 0; i < 10; ++i) {
+		std::ifstream infile(Assets::DATADIR + "CheatCommand.txt");
+		string commandFromFile;
+		infile >> commandFromFile;
+		infile.close();
+
+		server->SendGlobalPacket(StringPacket(commandFromFile));
+
+		server->UpdateServer();
+		client->UpdateClient();
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	NetworkBase::Destroy();
 }

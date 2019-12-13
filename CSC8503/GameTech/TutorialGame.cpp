@@ -95,12 +95,6 @@ void TutorialGame::UpdateGame(float dt) {
 		Debug::Print("(G)ravity off", Vector2(10, 40));
 	}
 	SpawnApples(20, dt);
-	SelectObject();
-	MoveSelectedObject();
-
-	world->UpdateWorld(dt);
-	renderer->Update(dt);
-	physics->Update(dt);
 
 	int bonusItemsToRespawn = player->GetBonusItemsToBeSpawned();
 	if (bonusItemsToRespawn > 0) {
@@ -118,7 +112,7 @@ void TutorialGame::UpdateGame(float dt) {
 		if (collected == itemsSpawned)
 			Debug::Print("You must return to nest quickly!", Vector2(10, 80));
 	}
-	
+
 	if (player->IsInNest()) {
 		PutItemsInNest(score);
 	}
@@ -128,6 +122,14 @@ void TutorialGame::UpdateGame(float dt) {
 		else
 			Debug::Print("Score : " + std::to_string(score), Vector2(10, 60), Vector4(0.9f, 0.9f, 0.9f, 1));
 	}
+
+	SelectObject();
+	MoveSelectedObject();
+
+	world->UpdateWorld(dt);
+	renderer->Update(dt);
+	physics->Update(dt);
+
 	Debug::FlushRenderables();
 	renderer->Render();
 }
@@ -487,13 +489,22 @@ void TutorialGame::AddGroundAndLake() {
 }
 
 void TutorialGame::CreateLimitsForAI() {
-	AddFloorToWorld(Vector3(0, 0, -27), Vector3(30, 0.7f, 3), nullptr, LayerType::LIMIT); //lake outbound
-	AddFloorToWorld(Vector3(0, 0, -153), Vector3(30, 0.7f, 3), nullptr, LayerType::LIMIT); //lake outbound
+	AddFloorToWorld(Vector3(0, 0, -29), Vector3(30, 0.5f, 1), nullptr, LayerType::LIMIT); //lake outbound
+	AddFloorToWorld(Vector3(0, 0, -151), Vector3(30, 0.5f, 1), nullptr, LayerType::LIMIT); //lake outbound
 	AddFloorToWorld(Vector3(-31, 0, -90), Vector3(1, 0.5f, 60), nullptr, LayerType::LIMIT); //lake outbound
 	AddFloorToWorld(Vector3(31, 0, -90), Vector3(1, 0.5f, 60), nullptr, LayerType::LIMIT); //lake outbound
 
 	AddFloorToWorld(Vector3(-45, 0, -94), Vector3(14.9f, 0.5f, 2), nullptr, LayerType::LIMIT);	// left obstacle
 	AddFloorToWorld(Vector3(-45, 0, -86), Vector3(14.9f, 0.5f, 2), nullptr, LayerType::LIMIT);	// left obstacle
+
+
+	AddFloorToWorld(Vector3(-44, 0, -197), Vector3(2, 0.2f, 14), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(-34, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(-18, 0, -175.2f), Vector3(6, 0.2f, 2), nullptr, LayerType::LIMIT); //door
+	AddFloorToWorld(Vector3(-2, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(18, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(38, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(54, 0, -175), Vector3(6, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
 }
 
 void TutorialGame::AddWalls() {
@@ -517,9 +528,6 @@ void TutorialGame::AddBonusItems() {
 	}
 }
 
-/*
-A single function to add a large immoveable cube to the bottom of our world
-*/
 GameObject* TutorialGame::AddFloorToWorld(const Vector3& position, Vector3 floorSize, OGLTexture* texture, NCL::LayerType layer, string name, bool handleAsSprings) {
 	GameObject* floor = new GameObject(name);
 	floor->SetLayer(layer);
@@ -551,13 +559,6 @@ GameObject* TutorialGame::AddFloorToWorld(const Vector3& position, Vector3 floor
 	return floor;
 }
 
-/*
-
-Builds a game object that uses a sphere mesh for its graphics, and a bounding sphere for its
-rigid body representation. This and the cube function will let you build a lot of 'simple' 
-physics worlds. You'll probably need another function for the creation of OBB cubes too.
-
-*/
 GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, float elasticity, float inverseMass, LayerType layer, string name) {
 	GameObject* sphere = new GameObject(name);
 	sphere->SetLayer(layer);
@@ -642,7 +643,7 @@ void TutorialGame::ReSpawnItems(int amount, bool isApple) {
 		for (int i = 0; i < amount; ++i) {
 			int random = rand() % 1000 + 500;
 			GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
-			Sleep(50);
+			//Sleep(50);
 			appleInstance->GetPhysicsObject()->AddForce(Vector3(random, 300.0f, random));
 			++itemsSpawned;
 		}

@@ -140,8 +140,8 @@ namespace NCL {
 			vector<Vector3> respawningPositions;
 
 			Vector3 broadphaseAABB;
-			int applesToBeSpawned = 0;
-			int bonusItemsToBeSpawned = 0;
+			int applesToBeSpawned;
+			int bonusItemsToBeSpawned;
 		};
 	}
 }

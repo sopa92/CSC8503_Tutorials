@@ -12,6 +12,8 @@ GameObject::GameObject(string objectName)	{
 	networkObject	= nullptr;
 	world = nullptr;
 	playerIsInNest = false;
+	applesToBeSpawned = 0;
+	bonusItemsToBeSpawned = 0;
 }
 
 GameObject::~GameObject()	{
@@ -79,8 +81,8 @@ void GameObject::CollectObject(GameObject* collectable){
 void GameObject::DropCarryingItems()
 {
 	int numberOfCarryingObjects = carryingObjects.size();
-	int applesToBeSpawned = 0;
-	int bonusItemsToBeSpawned = 0;
+	/*int applesToBeSpawned = 0;
+	int bonusItemsToBeSpawned = 0;*/
 	if (numberOfCarryingObjects > 0) {
 		for (int i = 0; i < numberOfCarryingObjects; ++i) {
 			if (carryingObjects[i]->GetName() == "apple") {
@@ -92,8 +94,8 @@ void GameObject::DropCarryingItems()
 				respawningPositions.push_back(carryingObjects[i]->GetTransform().GetWorldPosition());
 			}
 		}
-		SetBonusItemsToBeSpawned(bonusItemsToBeSpawned);
-		SetApplesToBeSpawned(applesToBeSpawned);
+		//SetBonusItemsToBeSpawned(bonusItemsToBeSpawned);
+		//SetApplesToBeSpawned(applesToBeSpawned);
 		carryingObjects.clear();
 		collectedObjects -= applesToBeSpawned + bonusItemsToBeSpawned;
 	}
