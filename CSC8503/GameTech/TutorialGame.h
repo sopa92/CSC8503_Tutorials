@@ -14,9 +14,9 @@
 #include "../CSC8503Common/StateTransition.h"
 #include "../CSC8503Common/AIAgent.h"
 
-namespace NCL {
-	
+namespace NCL {	
 	namespace CSC8503 {
+
 		class TutorialGame		{
 		public:
 			TutorialGame();
@@ -46,7 +46,6 @@ namespace NCL {
 			test scenarios (constraints, collision types, and so on). 
 			*/
 			void InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius, const Vector3& positionTranslation);
-			void Spa_InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing);
 			void InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims, const Vector3& positionTranslation);
 			void BridgeConstraintTest();
 			void SimpleGJKTest();
@@ -122,10 +121,8 @@ namespace NCL {
 			Vector3 gooseInitPos;
 			Vector3 agentInitPos;
 			Vector3 appleThrowerPos;
-			bool displayBoundingVolumes;
 			AIAgent* parkKeeper;
 			GameObject* player;
-			//Vector3 targetWaypoint;
 		};
 	}
 }

@@ -63,8 +63,6 @@ namespace NCL
 			virtual void OnAwake();
 			virtual void OnSleep();
 		private:
-			void DisplayMenu();
-		private:
 			int chosenMenuOption;
 			int maxOptions;
 			TutorialGame* gooseGame;

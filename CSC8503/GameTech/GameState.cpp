@@ -65,15 +65,15 @@ namespace NCL
 		{
 			if (gooseGame) {
 				gooseGame->UpdateGame(dt);
-				DisplayMenu();
+				if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::ESCAPE)) {
+					return -2;
+				}
+				
+				return -1;
 			}
-			if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::ESCAPE)) {
-				return -2;
-			}
-			return -1;
 		}
 
-		void StartGameState::OnAwake() {
+		void StartGameState::OnAwake() {			
 			gooseGame = new TutorialGame();
 		}
 
@@ -81,12 +81,5 @@ namespace NCL
 			delete gooseGame;
 			gooseGame = nullptr;
 		}
-
-		void StartGameState::DisplayMenu() {
-			const Vector4 selectedColor(1, 0, 1, 1);
-			const Vector2 pos2(150, 800);
-			Debug::Print("Start Game", pos2, selectedColor);
-		}
-
 	}
 }

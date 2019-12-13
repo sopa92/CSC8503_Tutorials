@@ -30,8 +30,7 @@ void ReturnToMenuAndRestart();
 
 int main() {
 	Vector2 screenDimensions = Vector2(1280, 720);
-	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", screenDimensions.x, screenDimensions.y);
-	float countdownInSec = 180;
+	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", screenDimensions.x, screenDimensions.y, false);
 	if (!w->HasInitialised()) {
 		return -1;
 	}	
@@ -44,7 +43,8 @@ int main() {
 	stateHandler = new GameStateHandler(renderer, 2);
 	stateHandler->Update(0);
 	stateHandler->Update(0);
-	
+
+	float countdownInSec = 180;
 
 	//while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyboardKeys::ESCAPE)) {
 	while (w->UpdateWindow() && !stateHandler->GetStateStack().empty()) {
@@ -67,7 +67,7 @@ int main() {
 		}
 		
 
-		if (!(stateHandler->currentState == 1 || stateHandler->currentState == 2))
+		if (!(stateHandler->currentState == 1))
 		{
 			Debug::FlushRenderables();
 			renderer->Update(dt);
@@ -82,22 +82,26 @@ int main() {
 			out.precision(0);
 			out << std::fixed << (timeLeft);
 			w->SetTitle("THE GOOSE GAME - Time Left (seconds): " + out.str());
+			if (timeLeft < 20)
+				Debug::Print("Time Left : " + out.str(), Vector2(screenDimensions.x / 2, screenDimensions.y - 100), Vector4(1, 0, 0, 1));
+			else
+				Debug::Print("Time Left : " + out.str(), Vector2(screenDimensions.x / 2, screenDimensions.y - 100), Vector4(0, 1, 0, 1));
 		}
 		else {
-			Debug::Print("Time's up... You lost :(", Vector2(screenDimensions.x / 4, screenDimensions.y / 2));
 
-			Debug::Print("Do you want to retry? (Y/N)", Vector2((screenDimensions.x / 4), (screenDimensions.y / 2 )-20));
+			Debug::Print("       Time's up...", Vector2(screenDimensions.x / 4, screenDimensions.y / 2), Vector4(1,0,0,1));
 
-			if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::Y)) {
+			Debug::Print("Press SPACE to continue", Vector2((screenDimensions.x / 4), (screenDimensions.y / 2 )-20), Vector4(1, 0, 0, 1));
+
+			if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::SPACE)) {
 
 				Debug::FlushRenderables();
 				ReturnToMenuAndRestart();
 				countdownInSec = 180 + countdownInSec;
 			}
-			else if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::N)) {
+			/*else if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::N)) {
 				break;
-			}
-			//stateHandler->PopMenuStack();
+			}*/
 		}
 	}
 	
@@ -145,13 +149,15 @@ public:
 			StringPacket* realPacket = (StringPacket*)payload;
 
 			string msg = realPacket->GetStringFromData();
-			if (msg == "POWER") {
-				world->SetScore(world->GetScore() + 1000);
-
-				std::ofstream outfile(Assets::DATADIR + "CheatCommand.txt");
-				outfile.close();
+			if (msg != "") {
+				if (msg == "POWER")
+					Debug::Print("Power Up Activated!", Vector2(50, 400), Vector4(1,0,0,1));
+				std::cout << name << " received message: " << msg << std::endl;
 			}
-			std::cout << name << " received message: " << msg << std::endl;
+
+			//clean the file with cheat
+			std::ofstream outfile(Assets::DATADIR + "CheatCommand.txt");
+			outfile.close();
 		}
 	}
 protected:
