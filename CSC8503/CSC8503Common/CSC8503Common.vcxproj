@@ -133,6 +133,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AABBVolume.h" />
+    <ClInclude Include="AIAgent.h" />
     <ClInclude Include="BoundingAABB.h" />
     <ClInclude Include="BoundingOOBB.h" />
     <ClInclude Include="BoundingSphere.h" />
@@ -168,6 +169,7 @@
     <ClInclude Include="Transform.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AIAgent.cpp" />
     <ClCompile Include="BoundingAABB.cpp" />
     <ClCompile Include="BoundingOOBB.cpp" />
     <ClCompile Include="BoundingSphere.cpp" />

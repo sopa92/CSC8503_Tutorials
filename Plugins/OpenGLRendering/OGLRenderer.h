@@ -52,6 +52,9 @@ namespace NCL {
 				forceValidDebugState = newState;
 			}
 
+			void SetAsActiveRenderingContext();
+
+
 			virtual bool SetVerticalSync(VerticalSyncState s);
 
 			void DrawString(const std::string& text, const Vector2&pos, const Vector4& colour = Vector4(0.75f, 0.75f, 0.75f,1));

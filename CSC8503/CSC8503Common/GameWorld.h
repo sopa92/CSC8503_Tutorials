@@ -53,40 +53,24 @@ namespace NCL {
 				std::vector<Constraint*>::const_iterator& first,
 				std::vector<Constraint*>::const_iterator& last) const;
 
-			GameObject* GetPlayer() {
+			GameObject* GetWorldItemOfType(LayerType type) {
 				GameObjectIterator itr;
 				for (itr = gameObjects.begin(); itr < gameObjects.end(); ++itr)
 				{
-					if ((*itr)->GetLayer() == LayerType::PLAYER) {
+					if ((*itr)->GetLayer() == type) {
 						return (*itr);
 					}
 				}
 				return nullptr;
 			}
-			GameObject* GetNest() {
-				GameObjectIterator itr;
-				for (itr = gameObjects.begin(); itr < gameObjects.end(); ++itr)
-				{
-					if ((*itr)->GetLayer() == LayerType::NEST) {
-						return (*itr);
-					}
-				}
-				return nullptr;
-			}
+			
 			int GetScore() { return score; }
 			void SetScore(int scr) { score = scr; }
-			int collectedObjects;
-			std::vector<GameObject*> carryingObjects;
-			void SetApplesToBeSpawned(int number){ applesToBeSpawned = number;}
-			int GetApplesToBeSpawned() { return applesToBeSpawned; }
-
-			void SetBonusItemsToBeSpawned(int number) { bonusItemsToBeSpawned = number; }
-			int GetBonusItemsToBeSpawned() { return bonusItemsToBeSpawned; }
-
-
+			
 			void SetEnableAppleThrower(bool status) { enableAppleThrower = status; }
 			bool GetEnableAppleThrower() { return enableAppleThrower; }
 
+			void DrawBoundingVolumes() const;
 		protected:
 			void UpdateTransforms();
 			void UpdateQuadTree();
@@ -95,10 +79,7 @@ namespace NCL {
 			std::vector<Constraint*> constraints;
 
 			QuadTree<GameObject*>* quadTree;
-			int applesToBeSpawned = 0;
-			int bonusItemsToBeSpawned = 0;
 			bool enableAppleThrower = false;
-
 			Camera* mainCamera;
 			int score;
 			bool shuffleConstraints;

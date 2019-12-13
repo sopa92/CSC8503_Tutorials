@@ -396,6 +396,11 @@ void OGLRenderer::DestroyWithWin32() {
 	wglDeleteContext(renderContext);
 }
 
+void OGLRenderer::SetAsActiveRenderingContext()
+{
+	wglMakeCurrent(deviceContext, renderContext);
+}
+
 bool OGLRenderer::SetVerticalSync(VerticalSyncState s) {
 	if (!wglSwapIntervalEXT) {
 		return false;

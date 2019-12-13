@@ -4,13 +4,7 @@ http://soundbible.com/1187-Goose.html
 */
 
 #include "TutorialGame.h"
-#include "../CSC8503Common/GameWorld.h"
-#include "../../Plugins/OpenGLRendering/OGLMesh.h"
-#include "../../Plugins/OpenGLRendering/OGLShader.h"
-#include "../../Plugins/OpenGLRendering/OGLTexture.h"
-#include "../../Common/TextureLoader.h"
-
-#include "../CSC8503Common/PositionConstraint.h"
+#include <sstream>
 
 using namespace NCL;
 using namespace CSC8503;
@@ -19,11 +13,10 @@ TutorialGame::TutorialGame()	{
 	world		= new GameWorld();
 	renderer	= new GameTechRenderer(*world);
 	physics		= new PhysicsSystem(*world);
-
 	forceMagnitude	= 10.0f;
 	useGravity		= false;
 	inSelectionMode = false;
-	applesSpawned = 0;
+	itemsSpawned = 0;
 	repetitions = 1;
 	Debug::SetRenderer(renderer);
 
@@ -53,6 +46,8 @@ void TutorialGame::InitialiseAssets() {
 	loadFunc("Apple.msh"	 , &appleMesh);
 
 	basicTex	= (OGLTexture*)TextureLoader::LoadAPITexture("checkerboard.png");
+	wallTex = (OGLTexture*)TextureLoader::LoadAPITexture("brick.png");
+	waterTex = (OGLTexture*)TextureLoader::LoadAPITexture("water.tga");
 	basicShader = new OGLShader("GameTechVert.glsl", "GameTechFrag.glsl");
 
 	InitWorld();
@@ -64,6 +59,8 @@ TutorialGame::~TutorialGame()	{
 	delete sphereMesh;
 	delete gooseMesh;
 	delete basicTex;
+	delete wallTex;
+	delete waterTex;
 	delete basicShader;
 
 	delete physics;
@@ -73,14 +70,15 @@ TutorialGame::~TutorialGame()	{
 
 void TutorialGame::UpdateGame(float dt) {
 
+	parkKeeper->Update(dt);
+
 	if (!inSelectionMode) {
 		world->GetMainCamera()->UpdateCamera(dt);
 	}
 	if (lockedObject != nullptr) {
 		LockedCameraMovement();
 	}
-	//physics->SetGravity(Vector3(0.0f, -9.8f, 0.0f));
-	//physics->SetGlobalDamping(0.1f);
+
 	UpdateKeys();
 
 	if (useGravity) {
@@ -89,7 +87,41 @@ void TutorialGame::UpdateGame(float dt) {
 	else {
 		Debug::Print("(G)ravity off", Vector2(10, 40));
 	}
-	SpawnApples(20, dt);
+	int applesCreated = 20;
+	SpawnApples(applesCreated, dt);
+
+	int bonusItemsToRespawn = player->GetBonusItemsToBeSpawned();
+	if (bonusItemsToRespawn > 0) {
+		ReSpawnItems(bonusItemsToRespawn, false);
+	}
+	int applesRespawned = player->GetApplesToBeSpawned();
+	if (applesRespawned > 0) {
+		ReSpawnItems(applesRespawned, true);
+
+	}
+	itemsSpawned -= applesRespawned + bonusItemsToRespawn;
+	int score = world->GetScore();
+	int collected = player->GetCollectedItems();
+	if (collected > 0) {
+		Debug::Print("Collected : " + std::to_string(collected) + "/" + std::to_string(itemsSpawned) + "...", Vector2(10, 100));
+		if (collected == itemsSpawned)
+			Debug::Print("You must return to nest quickly!", Vector2(10, 80));
+	}
+
+	if (player->IsInNest()) {
+		PutItemsInNest(score);
+	}
+
+	if (score > 0) {
+		if ((collected == applesCreated && score == applesCreated) || score == applesCreated + 20) {
+
+			const Vector2 posText(200, 500);
+			Debug::Print(" We have a WINNER!!! Scored: " + std::to_string(world->GetScore()), posText, Vector4(0, 1, 0, 1));
+			Debug::Print(" Press ESC to leave or H to honk! ", Vector2(posText.x - 50, posText.y -70), Vector4(0, 1, 0, 1));			
+		}
+		else
+			Debug::Print("Score : " + std::to_string(score), Vector2(10, 60), Vector4(0.9f, 0.9f, 0.9f, 1));
+	}
 	SelectObject();
 	MoveSelectedObject();
 
@@ -97,48 +129,32 @@ void TutorialGame::UpdateGame(float dt) {
 	renderer->Update(dt);
 	physics->Update(dt);
 
-	applesRespawned = world->GetApplesToBeSpawned();
-	if (applesRespawned > 0) {
-		ReSpawnApples(applesRespawned);
-	}
-	applesSpawned -= applesRespawned;
-	int score = world->GetScore();
-	int collected = world->collectedObjects;
-	if (collected > 0) {
-		renderer->DrawString("Collected : " + std::to_string(collected) + "/" + std::to_string(applesSpawned) + "...", Vector2(10, 100), Vector4(1, 1, 1, 1));
-		if (collected == applesSpawned)
-			renderer->DrawString("You must return to nest quickly!", Vector2(10, 80), Vector4(1, 1, 1, 1));
-	}
-
-	CollisionDetection::CollisionInfo info;
-	if (CollisionDetection::ObjectIntersection(world->GetPlayer(), world->GetNest(), info)) {
-
-		int itemsToPutInBasket = world->carryingObjects.size();
-		if (itemsToPutInBasket > 0) {
-			for (int i = 0; i < itemsToPutInBasket; ++i) {
-				if (world->carryingObjects[i]->GetName() == "apple") {
-					++score;
-				}
-				else {
-					score += 5;
-				}
-				AddSphereToWorld(Vector3(-3.63f + i * 0.01f, 4 + i / 2.0f, -86.6f + i * 0.001f), 0.3f, false, 0, 1);
-			}
-			world->SetScore(score);
-			world->carryingObjects.clear();
-		}
-	}
-	if (score > 0) {
-		if (score == applesSpawned)
-			renderer->DrawString("You won!!!!", Vector2(10, 60), Vector4(0.9f, 0.9f, 0.9f, 1));
-		else
-			renderer->DrawString("Score : " + std::to_string(score), Vector2(10, 60), Vector4(0.9f, 0.9f, 0.9f, 1));
-	}
 	Debug::FlushRenderables();
 	renderer->Render();
 }
 
+void TutorialGame::PutItemsInNest(int& score) {
+
+	int itemsToPutInBasket = player->GetCarryingItems().size();
+	if (itemsToPutInBasket > 0) {
+		for (int i = 0; i < itemsToPutInBasket; ++i) {
+			if (player->GetCarryingItems()[i]->GetName() == "apple") {
+				++score;
+				AddSphereToWorld(Vector3(-3.63f + i * 0.01f, 4 + i / 2.0f, -86.6f + i * 0.001f), 0.3f, 0, 1, LayerType::SPHERE, "apple");
+			}
+			else {
+				score += 5;
+				AddSphereToWorld(Vector3(-3.63f + i * 0.01f, 4 + i / 2.0f, -86.6f + i * 0.001f), 0.3f, 0, 1, LayerType::SPHERE, "bonusItem");
+			}
+		}
+		world->SetScore(score);
+		player->ClearCarryingItems();
+	}
+
+}
+
 void TutorialGame::UpdateKeys() {
+
 	if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::F1)) {
 		InitWorld(); //We can reset the simulation at any time with F1
 		selectionObject = nullptr;
@@ -194,47 +210,51 @@ void TutorialGame::LockedObjectMovement() {
 	Vector3 vertAxis = Vector3::Cross(fwdAxis, rightAxis);
 
 	float rotationSpeed = 60.0f;
-	Vector3 pyr = lockedObject->GetConstTransform().GetLocalOrientation().ToEuler();
+	Vector3 objectOrientation = lockedObject->GetConstTransform().GetLocalOrientation().ToEuler();
 
-	pyr.y = pyr.y >= 0.0f ? (pyr.y <= 360.0f ? pyr.y : pyr.y - 360.0f) : pyr.y + 360.0f;
+	objectOrientation.y = objectOrientation.y >= 0.0f 
+		? (objectOrientation.y <= 360.0f 
+			? objectOrientation.y 
+			: objectOrientation.y - 360.0f) 
+		: objectOrientation.y + 360.0f;
 	
-	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT)) {
-		pyr.y += pyr.y <= 270.0f 
-			? (pyr.y > 90.0f 
+	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::LEFT) || Window::GetKeyboard()->KeyDown(KeyboardKeys::A)) {
+		objectOrientation.y += objectOrientation.y <= 270.0f
+			? (objectOrientation.y > 90.0f
 				? -rotationSpeed * 0.1f
 				: rotationSpeed * 0.1f)
 			: rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(-rightAxis);
 	}
 
-	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT)) {
-		pyr.y += pyr.y >= 90.0f
-			? (pyr.y < 270.0f
+	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::RIGHT) || Window::GetKeyboard()->KeyDown(KeyboardKeys::D)) {
+		objectOrientation.y += objectOrientation.y >= 90.0f
+			? (objectOrientation.y < 270.0f
 				? rotationSpeed * 0.1f
 				: -rotationSpeed * 0.1f)
 			: -rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(rightAxis);
 	}
 
-	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP)) {
-		pyr.y += pyr.y >= 0.0f
-			? (pyr.y < 180.0f
+	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::UP) || Window::GetKeyboard()->KeyDown(KeyboardKeys::W)) {
+		objectOrientation.y += objectOrientation.y >= 0.0f
+			? (objectOrientation.y < 180.0f
 				? -rotationSpeed * 0.1f
 				: rotationSpeed * 0.1f)
 			: rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(fwdAxis);
 	}
 
-	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::DOWN)) {
-		pyr.y += pyr.y >= 0.0f
-			? (pyr.y < 180.0f
+	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::DOWN) || Window::GetKeyboard()->KeyDown(KeyboardKeys::S)) {
+		objectOrientation.y += objectOrientation.y >= 0.0f
+			? (objectOrientation.y < 180.0f
 				? rotationSpeed * 0.1f
 				: -rotationSpeed * 0.1f)
 			: -rotationSpeed * 0.1f;
 		lockedObject->GetPhysicsObject()->AddForce(-fwdAxis);
 	}
 
-	lockedObject->GetTransform().SetLocalOrientation(Quaternion::EulerAnglesToQuaternion(pyr.x, pyr.y, pyr.z));
+	lockedObject->GetTransform().SetLocalOrientation(Quaternion::EulerAnglesToQuaternion(objectOrientation.x, objectOrientation.y, objectOrientation.z));
 	if (Window::GetKeyboard()->KeyDown(KeyboardKeys::SPACE)) {
 		lockedObject->GetPhysicsObject()->AddForce(Vector3(0,200,0));
 	}
@@ -255,12 +275,11 @@ void  TutorialGame::LockedCameraMovement() {
 		Quaternion q(modelMat);
 		Vector3 angles = q.ToEuler(); //nearly there now!
 
-		world->GetMainCamera()->SetPosition(camPos + Vector3(0, 0, 10));
+		world->GetMainCamera()->SetPosition(camPos);
 		//world->GetMainCamera()->SetPitch(angles.x + 15);
 		//world->GetMainCamera()->SetYaw(angles.y);
 	}
 }
-
 
 void TutorialGame::DebugObjectMovement() {
 //If we've selected an object, we can manipulate it with some key presses
@@ -332,7 +351,11 @@ bool TutorialGame::SelectObject() {
 		renderer->DrawString("Press Q to change to camera mode!", Vector2(10, 0));
 		if (selectionObject)
 		{
-			Debug::Print("Selected object " + selectionObject->GetName(), Vector2(0, 80));
+			Debug::Print("Selected object " + selectionObject->GetName() + " is located ", Vector2(0, 300), Vector4(0, 0, 1, 1));
+			Debug::Print("at position: " + std::to_string(selectionObject->GetTransform().GetWorldPosition().x)
+				+ ", " + std::to_string(selectionObject->GetTransform().GetWorldPosition().y)
+				+ ", " + std::to_string(selectionObject->GetTransform().GetWorldPosition().z), Vector2(0, 270), Vector4(0, 0, 1, 1));
+
 			if (seenObject)
 			{
 				seenObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
@@ -419,52 +442,86 @@ void TutorialGame::InitCamera() {
 	world->GetMainCamera()->SetFarPlane(500.0f);
 	world->GetMainCamera()->SetPitch(-15.0f);
 	world->GetMainCamera()->SetYaw(0.0f);
-	//world->GetMainCamera()->SetPosition(Vector3(-60, 40, 60));
-	//world->GetMainCamera()->SetPosition(gooseInitPos + Vector3(0,15,30));
-	lockedObject = world->GetPlayer();
+	lockedObject = player;
 }
 
 void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	//InitCubeGridWorld(10, 10, 4.f, 4.f, Vector3(1, 1, 1));
-	//InitSphereGridWorld(10, 10, 4.f, 4.f, 1.f);
 	appleThrowerPos = Vector3(-59, 2, -209);
 	AddCubeToWorld(appleThrowerPos, Vector3(1, 2, 1), 0, 0, Vector4(0,1,0,1), true);		//applethrower
-	CreateBox();
+	
+	agentInitPos = Vector3(40, 2, -160);
+	AddParkKeeperToWorld(agentInitPos);
+	//AddCharacterToWorld(Vector3(45, 2, -10));
+	AddGroundAndLake();
 
-	AddParkKeeperToWorld(Vector3(40, 2, 0));
-	AddCharacterToWorld(Vector3(45, 2, 0));
-
-	AddFloorToWorld(Vector3(0, -2, 0), Vector3(60,2,30));		// first piece of floor
-
-	OGLTexture* waterTex = (OGLTexture*)TextureLoader::LoadAPITexture("water.tga");
-	AddFloorToWorld(Vector3(0, -2, -90), Vector3(30, 2, 60), waterTex, LayerType::WATER, "lake", true); //lake
-	//AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
-
-
-	OGLTexture* islangTex = (OGLTexture*)TextureLoader::LoadAPITexture("island.jpg");
-	AddFloorToWorld(Vector3(0, -1, -90), Vector3(5, 1.5f, 5), islangTex, LayerType::NEST, "island");	// island nest
+	
+	CreateLimitsForAI();	
+	
 	AddGooseToWorld(Vector3(0, 2, -90));
 
+	AddFences();
+	AddBonusItems();
+	AddWalls();
+
+}
+
+void TutorialGame::AddGroundAndLake() {
+	AddFloorToWorld(Vector3(0, -2, 0), Vector3(60, 2, 30));		// first piece of floor
 	AddFloorToWorld(Vector3(-45, -2, -90), Vector3(15, 2, 60));	// left side piece of floor
 	AddFloorToWorld(Vector3(45, -2, -90), Vector3(15, 2, 60));	// right side piece of floor
 	AddFloorToWorld(Vector3(0, -2, -180), Vector3(60, 2, 30));	// second piece of floor
 
-	OGLTexture* wallTex = (OGLTexture*)TextureLoader::LoadAPITexture("brick.png");
-	AddFloorToWorld(Vector3(-45, 2, -90), Vector3(15, 2, 1), wallTex);	// block left
-	AddFloorToWorld(Vector3(0, 25, -211), Vector3(60, 30, 1), wallTex);	// wall front
-	AddFloorToWorld(Vector3(-61, 25, -90), Vector3(1, 30, 120), wallTex);	// wall left
-	AddFloorToWorld(Vector3(61, 25, -90), Vector3(1, 30, 120), wallTex);	// wall right
+	AddFloorToWorld(Vector3(0, -1.9f, -90), Vector3(30, 2, 60), waterTex, LayerType::WATER, "lake", true); //lake
+	AddFloorToWorld(Vector3(0, -1, -90), Vector3(30,0.5f,60));	// lake bottom
 
-	//Spa_InitMixedGridWorld(10, 10, 3.5f, 3.5f);
-	CreateFences();
+	OGLTexture* islangTex = (OGLTexture*)TextureLoader::LoadAPITexture("island.jpg");
+	AddFloorToWorld(Vector3(0, -1, -90), Vector3(5, 1.5f, 5), islangTex, LayerType::NEST, "island");	// island nest
+	AddBasket();
 }
 
-/*
-A single function to add a large immoveable cube to the bottom of our world
-*/
+void TutorialGame::CreateLimitsForAI() {
+	AddFloorToWorld(Vector3(0, 0, -29), Vector3(30, 0.5f, 1), nullptr, LayerType::LIMIT); //lake outbound
+	AddFloorToWorld(Vector3(0, 0, -151), Vector3(30, 0.5f, 1), nullptr, LayerType::LIMIT); //lake outbound
+	AddFloorToWorld(Vector3(-31, 0, -90), Vector3(1, 0.5f, 60), nullptr, LayerType::LIMIT); //lake outbound
+	AddFloorToWorld(Vector3(31, 0, -90), Vector3(1, 0.5f, 60), nullptr, LayerType::LIMIT); //lake outbound
+
+	AddFloorToWorld(Vector3(-45, 0, -94), Vector3(14.9f, 0.5f, 2), nullptr, LayerType::LIMIT);	// left obstacle
+	AddFloorToWorld(Vector3(-45, 0, -86), Vector3(14.9f, 0.5f, 2), nullptr, LayerType::LIMIT);	// left obstacle
+
+
+	AddFloorToWorld(Vector3(-44, 0, -197), Vector3(2, 0.2f, 14), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(-34, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(-18, 0, -175.2f), Vector3(6, 0.2f, 2), nullptr, LayerType::LIMIT); //door
+	AddFloorToWorld(Vector3(-2, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(18, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(38, 0, -175), Vector3(10, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+	AddFloorToWorld(Vector3(54, 0, -175), Vector3(6, 0.2f, 2), nullptr, LayerType::LIMIT); //fence
+}
+
+void TutorialGame::AddWalls() {
+	AddFloorToWorld(Vector3(-45, 2, -90), Vector3(14.9f, 2, 3), wallTex);	// left obstacle
+	AddFloorToWorld(Vector3(0, 25, -215), Vector3(60, 30, 5), wallTex);	// wall front
+	AddFloorToWorld(Vector3(-61, 25, -90), Vector3(1, 30, 120), wallTex);	// wall left
+	AddFloorToWorld(Vector3(61, 25, -90), Vector3(1, 30, 120), wallTex);	// wall right
+	AddFloorToWorld(Vector3(0, 25, 35), Vector3(60, 30, 5), wallTex);	// wall front
+}
+
+void TutorialGame::AddBonusItems() {
+	int xPos = 55;
+	int yPosBall = 17;
+	int yPosTramboline = 5;
+	int zPos = -30;
+
+	for (int i = 0; i < 4; ++i) {
+		AddSphereToWorld(Vector3(-xPos, yPosBall + i * 3, zPos * i), 1.0f, 1, 0, LayerType::OBJECT, "bonusItem");
+		AddCubeToWorld(Vector3(-xPos, yPosTramboline + i * 3, zPos * i), Vector3(5, 0.5f, 5), 20, 0, Vector4(0, 1, 1, 1));
+		++itemsSpawned;
+	}
+}
+
 GameObject* TutorialGame::AddFloorToWorld(const Vector3& position, Vector3 floorSize, OGLTexture* texture, NCL::LayerType layer, string name, bool handleAsSprings) {
 	GameObject* floor = new GameObject(name);
 	floor->SetLayer(layer);
@@ -482,6 +539,8 @@ GameObject* TutorialGame::AddFloorToWorld(const Vector3& position, Vector3 floor
 	floor->GetPhysicsObject()->InitCubeInertia();
 	if (texture == nullptr) {
 		floor->GetRenderObject()->SetColour(Vector4(0.2f, 0.5f, 0.2f, 1));
+		if(layer==LayerType::LIMIT)
+			floor->GetRenderObject()->SetColour(Vector4(0.2f, 0.5f, 0.2f, 0));
 	}
 	if (handleAsSprings)
 	{
@@ -494,16 +553,9 @@ GameObject* TutorialGame::AddFloorToWorld(const Vector3& position, Vector3 floor
 	return floor;
 }
 
-/*
-
-Builds a game object that uses a sphere mesh for its graphics, and a bounding sphere for its
-rigid body representation. This and the cube function will let you build a lot of 'simple' 
-physics worlds. You'll probably need another function for the creation of OBB cubes too.
-
-*/
-GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, bool isHollow, float elasticity, float inverseMass) {
-	GameObject* sphere = new GameObject("Sphere");
-	sphere->SetLayer(LayerType::SPHERE);
+GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, float elasticity, float inverseMass, LayerType layer, string name) {
+	GameObject* sphere = new GameObject(name);
+	sphere->SetLayer(layer);
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
 	SphereVolume* volume = new SphereVolume(radius);
@@ -516,17 +568,14 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 	sphere->GetPhysicsObject()->SetInverseMass(inverseMass);
 
-	if (isHollow)
-	{
-		sphere->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
-		sphere->GetPhysicsObject()->InitSphereInertia(true);
-	}
-	else
-	{
+	if (name != "bonusItem") {
 		sphere->GetRenderObject()->SetColour(Vector4(1, 0, 0, 1));
-		sphere->GetPhysicsObject()->InitSphereInertia(true);
 	}
-
+	else {
+		sphere->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
+	}
+	sphere->GetPhysicsObject()->InitSphereInertia(true);
+	
 	sphere->GetPhysicsObject()->SetElasticity(elasticity);
 	sphere->GetPhysicsObject()->SetStiffness(100.f);
 
@@ -535,7 +584,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 	return sphere;
 }
 
-void TutorialGame::CreateBox(){
+void TutorialGame::AddBasket(){
 
 	AddCubeToWorld(Vector3(-3.6f, 1, -86.5f), Vector3(1.1f, 0.05f, 1.1f), 0, 0, Vector4(0.05f, 0.05f, 0.05f, 1));	// island nest box
 	AddCubeToWorld(Vector3(-3.6f, 1, -85.3f), Vector3(1.1f, 0.5f, 0.1f), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1));	// island nest box
@@ -543,30 +592,33 @@ void TutorialGame::CreateBox(){
 	AddCubeToWorld(Vector3(-4.6f, 1, -86.5f), Vector3(0.1f, 0.5f, 1.1f), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1));	// island nest box
 	AddCubeToWorld(Vector3(-2.6f, 1, -86.5f), Vector3(0.1f, 0.5f, 1.1f), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1));	// island nest box
 }
-void TutorialGame::CreateFences() {
-	AddCubeToWorld(Vector3(-45, 3, -195), Vector3(1, 3, 16), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
-	AddCubeToWorld(Vector3(-34, 3, -180), Vector3(10, 3, 1), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
+
+void TutorialGame::AddFences() {
+	AddCubeToWorld(Vector3(-41, 3, -197), Vector3(3, 3, 14), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
+	AddCubeToWorld(Vector3(-34, 3, -180), Vector3(10, 3, 3), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
 	AddCubeToWorld(Vector3(-18, 3, -180.2f), Vector3(6, 3, 0.8f), 0, 0, Vector4(0.3f, 0.1f, 0.05f, 0.3f)); //door
-	AddCubeToWorld(Vector3(-2, 3, -180), Vector3(10, 3, 1), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
-	AddCubeToWorld(Vector3(18, 3, -180), Vector3(10, 3, 1), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
-	AddCubeToWorld(Vector3(38, 3, -180), Vector3(10, 3, 1), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
-	AddCubeToWorld(Vector3(54, 3, -180), Vector3(6, 3, 1), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
-	AddCubeToWorld(Vector3(-22, 1, -178), Vector3(1.5f, 1.5f, 1), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
-	AddCubeToWorld(Vector3(-20, 1, -178), Vector3(1.5f, 1.5f, 1), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
-	AddCubeToWorld(Vector3(-17, 1, -178), Vector3(1.5f, 1.5f, 1), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
+	AddCubeToWorld(Vector3(-2, 3, -180), Vector3(10, 3, 3), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
+	AddCubeToWorld(Vector3(18, 3, -180), Vector3(10, 3, 3), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
+	AddCubeToWorld(Vector3(38, 3, -180), Vector3(10, 3, 3), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
+	AddCubeToWorld(Vector3(54, 3, -180), Vector3(6, 3, 3), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1)); //fence
+	AddCubeToWorld(Vector3(-22, 1, -175), Vector3(1.5f, 1.5f, 1.5f), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
+	AddCubeToWorld(Vector3(-10, 1, -175), Vector3(1.5f, 1.5f, 1.5f), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
+	AddCubeToWorld(Vector3(2, 1, -175), Vector3(1.5f, 1.5f, 1.5f), 0, 0.7f, Vector4(1, 1, 0.0f, 1));	//hay block
+	
+	AddCubeToWorld(Vector3(-15, 3, -10), Vector3(5, 3, 1), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1));	//fence
+	AddCubeToWorld(Vector3(-20, 3, -10), Vector3(1, 3, 5), 0, 0, Vector4(0.1f, 0.1f, 0.1f, 1));	//fence
 }
 
 void TutorialGame::SpawnApples(int amount, float dt){
-	if (world->GetEnableAppleThrower() || world->GetApplesToBeSpawned()>0) {
+	if (world->GetEnableAppleThrower() || player->GetApplesToBeSpawned()>0) {
 		if (dt * 1000.0f > 7) {
 			if (repetitions % 5 == 0) {
 				int random = rand() % 5000 + 1000;
 				GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
-				Sleep(50);
 				appleInstance->GetPhysicsObject()->AddForce(Vector3(random * 3.0f, random * 1.3f, random * (repetitions / 13.f)));
-				++applesSpawned;
-				if (world->GetApplesToBeSpawned() > 0) {
-					world->SetApplesToBeSpawned(world->GetApplesToBeSpawned() - 1);
+				++itemsSpawned;
+				if (player->GetApplesToBeSpawned() > 0) {
+					player->SetApplesToBeSpawned(player->GetApplesToBeSpawned() - 1);
 				}
 			}
 			++repetitions;
@@ -578,16 +630,23 @@ void TutorialGame::SpawnApples(int amount, float dt){
 	}
 }
 
-void TutorialGame::ReSpawnApples(int amount) {
-	
-	for (int i = 0; i < amount; ++i) {		
-		int random = rand() % 1000 + 500;
-		GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
-		Sleep(50);
-		appleInstance->GetPhysicsObject()->AddForce(Vector3(random, 300, random));
-		++applesSpawned;		
+void TutorialGame::ReSpawnItems(int amount, bool isApple) {
+	if (isApple) {
+		for (int i = 0; i < amount; ++i) {
+			int random = rand() % 3000 + 1000;
+			GameObject* appleInstance = AddAppleToWorld(appleThrowerPos + Vector3(0, 0, 0));
+			appleInstance->GetPhysicsObject()->AddForce(Vector3(random, 1000, random));
+			++itemsSpawned;
+		}
+		player->SetApplesToBeSpawned(0);
 	}
-	world->SetApplesToBeSpawned(0);
+	else {
+		for (int i = 0; i < amount; ++i) {
+			AddSphereToWorld(player->GetRespawningPositions()[i], 1.0f, 1, 0, LayerType::OBJECT, "bonusItem");
+			++itemsSpawned;
+		}
+		player->SetBonusItemsToBeSpawned(0);
+	}
 }
 
 GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimensions, float elasticity, float inverseMass, Vector4 colour, bool isAppleThrower) {
@@ -644,15 +703,17 @@ GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
 	goose->GetPhysicsObject()->SetHandleLikeSpring(true);
 	world->AddGameObject(goose);
 
+	player = goose;
+
 	return goose;
 }
 
-GameObject* TutorialGame::AddParkKeeperToWorld(const Vector3& position)
+AIAgent* TutorialGame::AddParkKeeperToWorld(const Vector3& position)
 {
 	float meshSize = 4.0f;
-	float inverseMass = 0.5f;
+	float inverseMass = 0.1f;
 
-	GameObject* keeper = new GameObject("keeper");
+	AIAgent* keeper = new AIAgent(position, "keeper");
 	keeper->SetLayer(LayerType::ENEMY);
 
 	AABBVolume* volume = new AABBVolume(Vector3(0.3f, 0.9f, 0.3f) * meshSize);
@@ -667,8 +728,15 @@ GameObject* TutorialGame::AddParkKeeperToWorld(const Vector3& position)
 	keeper->GetPhysicsObject()->SetInverseMass(inverseMass);
 	keeper->GetPhysicsObject()->InitCubeInertia();
 
-	world->AddGameObject(keeper);
+	keeper->GetPhysicsObject()->SetStiffness(200.f);
+	keeper->GetPhysicsObject()->SetHandleLikeImpulse(true);
+	keeper->GetPhysicsObject()->SetHandleLikeSpring(true);
 
+	keeper->GetRenderObject()->SetColour(Vector4(0.1f, 0.7f, 0.7f, 1));
+
+	keeper->SetWorld(world);
+	world->AddGameObject(keeper);
+	parkKeeper = keeper;
 	return keeper;
 }
 
@@ -734,42 +802,15 @@ void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacin
 		for (int z = 0; z < numRows; ++z) {
 			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + positionTranslation;
 			if (rand() % 2) {
-				AddSphereToWorld(position, radius, true, 1.0f, 1.0f); // highly elastic material (like a rubber ball) 
+				AddSphereToWorld(position, radius, 1.0f, 1.0f); // highly elastic material (like a rubber ball) 
 			}
 			else {
-				AddSphereToWorld(position, radius, false, 0.01f, 1.0f); // low elasticity material (like steel)
+				AddSphereToWorld(position, radius, 0.01f, 1.0f); // low elasticity material (like steel)
 			}
 		}
 	}
-	//AddFloorToWorld(Vector3(0, -2, 0));
 }
 
-//void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
-//	float sphereRadius = 1.0f;
-//	Vector3 cubeDims = Vector3(1, 1, 1);
-//
-//	for (int x = 0; x < numCols; ++x) {
-//		for (int z = 0; z < numRows; ++z) {
-//			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing) + Vector3(-50,0, -30);
-//
-//			if (rand() % 2) {
-//				AddCubeToWorld(position, cubeDims);
-//			}
-//			else {
-//				AddSphereToWorld(position, sphereRadius);
-//			}
-//		}
-//	}
-//	AddFloorToWorld(Vector3(0, -2, 0));
-//}
-
-void TutorialGame::Spa_InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
-	float sphereRadius = 1.0f;
-	Vector3 cubeDims = Vector3(1, 1, 1);
-
-	InitSphereGridWorld(numRows, numCols, rowSpacing, colSpacing, sphereRadius, Vector3(0, 0, 0));
-	InitCubeGridWorld(numRows, numCols, rowSpacing, colSpacing, cubeDims, Vector3(-50, 0, -30));
-}
 
 void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims, const Vector3& positionTranslation) {
 	for (int x = 1; x < numCols+1; ++x) {
@@ -783,7 +824,6 @@ void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing,
 			}
 		}
 	}
-	//AddFloorToWorld(Vector3(0, -2, 0));
 }
 
 void TutorialGame::BridgeConstraintTest() {
@@ -828,3 +868,39 @@ void TutorialGame::SimpleGJKTest() {
 
 }
 
+
+
+void InitializeStateMachine() {
+	StateMachine* stateMachine = new StateMachine();
+	int someData = 0;
+
+	StateFunc AFunc = [](void* data) {
+		int* realData = (int*)data;
+		(*realData)++;
+		std::cout << "In State A!" << std::endl;
+	};
+	StateFunc BFunc = [](void* data) {
+		int* realData = (int*)data;
+		(*realData)--;
+		std::cout << "In State B!" << std::endl;
+	};
+
+	GenericState* stateA = new GenericState(AFunc, (void*)&someData);
+	GenericState* stateB = new GenericState(BFunc, (void*)&someData);
+	stateMachine->AddState(stateA);
+	stateMachine->AddState(stateB);
+
+	GenericTransition<int&, int>* transitionA =
+		new GenericTransition<int&, int>(GenericTransition<int&, int>::GreaterThanTransition, someData, 10, stateA, stateB); // if greater than 10 , A to B
+
+	GenericTransition<int&, int>* transitionB =
+		new GenericTransition<int&, int>(GenericTransition<int&, int>::EqualsTransition, someData, 0, stateB, stateA); // if equals 0 , B to A
+
+	stateMachine->AddTransition(transitionA);
+	stateMachine->AddTransition(transitionB);
+
+	for (int i = 0; i < 100; ++i) {
+		stateMachine->Update(); // run the state machine !
+	}
+	delete stateMachine;
+}

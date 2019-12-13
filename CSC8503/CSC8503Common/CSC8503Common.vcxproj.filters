@@ -123,6 +123,9 @@
     <ClInclude Include="PositionConstraint.h">
       <Filter>Physics</Filter>
     </ClInclude>
+    <ClInclude Include="AIAgent.h">
+      <Filter>AI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CollisionDetection.cpp">
@@ -199,6 +202,9 @@
     </ClCompile>
     <ClCompile Include="Transform.cpp">
       <Filter>Other</Filter>
+    </ClCompile>
+    <ClCompile Include="AIAgent.cpp">
+      <Filter>AI</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

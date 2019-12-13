@@ -1,4 +1,5 @@
 #pragma once
+#include "../../Common/Vector4.h"
 namespace NCL {
 	enum class VolumeType {
 		AABB	= 1,
@@ -17,7 +18,7 @@ namespace NCL {
 			type = VolumeType::Invalid;
 		}
 		~CollisionVolume() {}
-
 		VolumeType type;
+		virtual void DrawDebug(const NCL::Maths::Vector3& position, const NCL::Maths::Vector4& colour = NCL::Maths::Vector4(0, 1, 0, 1)) {}
 	};
 }

@@ -37,6 +37,13 @@ namespace NCL {
 				EndFrame();
 			}
 
+			void DebugRender()
+			{
+				BeginFrame();
+				RenderDebugFrame();
+				EndFrame();
+			}
+
 			virtual bool SetVerticalSync(VerticalSyncState s) {
 				return false;
 			}
@@ -47,6 +54,7 @@ namespace NCL {
 			
 			virtual void BeginFrame()	= 0;
 			virtual void RenderFrame()	= 0;
+			virtual void RenderDebugFrame() {}
 			virtual void EndFrame()		= 0;
 			
 			Window& hostWindow;

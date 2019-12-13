@@ -32,7 +32,7 @@ namespace NCL {
 				dataA(testData), dataB(otherData)
 			{
 				func				= f;
-				sourceState			= srcState;		//
+				sourceState			= srcState;	
 				destinationState	= destState;
 			}
 			~GenericTransition() {}
