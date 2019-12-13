@@ -1,7 +1,3 @@
-/*
-
-http://soundbible.com/1187-Goose.html
-*/
 
 #include "TutorialGame.h"
 #include <sstream>
@@ -167,7 +163,8 @@ void TutorialGame::UpdateKeys() {
 	if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::G)) {
 		useGravity = !useGravity; //Toggle gravity!
 		physics->UseGravity(useGravity);
-		world->SetEnableAppleThrower(true);
+		if(useGravity)
+			world->SetEnableAppleThrower(true);
 		
 	}
 	//Running certain physics updates in a consistent order might cause some
@@ -420,7 +417,7 @@ line - after the third, they'll be able to twist under torque aswell.
 */
 
 void TutorialGame::MoveSelectedObject() {
-	//renderer->DrawString(" Click Force :" + std::to_string(forceMagnitude), Vector2(10, 20)); // Draw debug text at 10 ,20
+	renderer->DrawString(" Click Force :" + std::to_string(forceMagnitude), Vector2(10, 20)); // Draw debug text at 10 ,20
 	forceMagnitude += Window::GetMouse()->GetWheelMovement() * 100.0f;
 	if (!selectionObject) {
 		return;// we haven 't selected anything !

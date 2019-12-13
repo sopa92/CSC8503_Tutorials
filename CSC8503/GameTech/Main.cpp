@@ -1,3 +1,14 @@
+/***********************************************
+Course: CSC8503
+Project: Coursework part A + part B
+Author: Sofia Papadopoulou - 190338075
+Acad. Year:	2019-2020
+Git Repo: https://github.com/sopa92/CSC8503_Tutorials.git
+References: Sound for honk 
+http://soundbible.com/1187-Goose.html
+***********************************************/
+
+
 #include "../../Common/Window.h"
 
 #include "../CSC8503Common/StateMachine.h"
@@ -30,7 +41,7 @@ void ReturnToMenuAndRestart();
 
 int main() {
 	Vector2 screenDimensions = Vector2(1280, 720);
-	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", screenDimensions.x, screenDimensions.y, false);
+	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", screenDimensions.x, screenDimensions.y, true);
 	if (!w->HasInitialised()) {
 		return -1;
 	}	
@@ -99,9 +110,6 @@ int main() {
 				ReturnToMenuAndRestart();
 				countdownInSec = 180 + countdownInSec;
 			}
-			/*else if (Window::GetKeyboard()->KeyPressed(KeyboardKeys::N)) {
-				break;
-			}*/
 		}
 	}
 	

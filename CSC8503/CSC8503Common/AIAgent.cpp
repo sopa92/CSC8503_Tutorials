@@ -91,7 +91,7 @@ namespace NCL
 					reachableNodes.push_back(temp);
 				}
 
-				DisplayPathfinding();
+				//DisplayPathfinding();
 			}
 		}
 
@@ -136,7 +136,7 @@ namespace NCL
 					reachableNodes.push_back(temp);
 				}
 
-				DisplayPathfinding();
+				//DisplayPathfinding();
 			}
 		}
 
